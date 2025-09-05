@@ -54,13 +54,38 @@ class AdminApiClient {
       
       if (!response.ok) {
         let errorMessage = `HTTP ${response.status}`;
+        let errorType = 'api_error';
+        
         try {
           const errorData = await response.json();
           errorMessage = errorData.detail || errorData.message || errorMessage;
+          
+          // 只有在真正的認證錯誤時才標記為 auth_error
+          if (response.status === 401 && 
+              (errorMessage.includes('Invalid token') || 
+               errorMessage.includes('expired') ||
+               errorMessage.includes('unauthorized'))) {
+            errorType = 'auth_error';
+          } else if (response.status === 403) {
+            errorType = 'permission_error';
+          } else if (response.status >= 500) {
+            errorType = 'server_error';
+          }
         } catch {
           // 如果無法解析錯誤JSON，使用狀態碼
+          if (response.status === 401) {
+            errorType = 'auth_error';
+          } else if (response.status === 403) {
+            errorType = 'permission_error';
+          } else if (response.status >= 500) {
+            errorType = 'server_error';
+          }
         }
-        throw new Error(errorMessage);
+        
+        const error = new Error(errorMessage) as Error & { type?: string; status?: number };
+        error.type = errorType;
+        error.status = response.status;
+        throw error;
       }
 
       return await response.json();
@@ -68,13 +93,30 @@ class AdminApiClient {
       if (error instanceof Error) {
         throw error;
       }
-      throw new Error('API請求失敗');
+      const unknownError = new Error('API請求失敗') as Error & { type?: string };
+      unknownError.type = 'network_error';
+      throw unknownError;
     }
   }
 
   // Dashboard APIs
   async getDashboardStats(): Promise<DashboardStats> {
-    return this.makeRequest<DashboardStats>('/dashboard/stats');
+    try {
+      return await this.makeRequest<DashboardStats>('/dashboard/stats');
+    } catch (error) {
+      // Provide fallback data for dashboard stats
+      console.warn('Dashboard stats API failed, returning fallback data:', error);
+      return {
+        totalUsers: 0,
+        totalArticles: 0,
+        totalRevenue: 0,
+        totalCoinsSpent: 0,
+        activeUsers: 0,
+        blockedUsers: 0,
+        pendingReviews: 0,
+        error: error instanceof Error ? error.message : 'Unknown error'
+      } as DashboardStats;
+    }
   }
 
   async getUserGrowthStats(days: number = 30): Promise<UserGrowthData[]> {
@@ -192,21 +234,65 @@ class AdminApiClient {
     return this.makeRequest('/blocks/stats');
   }
 
-  // Statistics APIs
+  // Statistics APIs with fallback handling
   async getUserAnalytics(): Promise<UserAnalytics> {
-    return this.makeRequest<UserAnalytics>('/stats/users');
+    try {
+      return await this.makeRequest<UserAnalytics>('/stats/users');
+    } catch (error) {
+      console.warn('User analytics API failed, returning fallback data:', error);
+      return {
+        totalUsers: 0,
+        activeUsers: 0,
+        newUsersToday: 0,
+        userGrowthRate: 0,
+        error: error instanceof Error ? error.message : 'Unknown error'
+      } as UserAnalytics;
+    }
   }
 
   async getContentAnalytics(): Promise<ContentAnalytics> {
-    return this.makeRequest<ContentAnalytics>('/stats/content');
+    try {
+      return await this.makeRequest<ContentAnalytics>('/stats/content');
+    } catch (error) {
+      console.warn('Content analytics API failed, returning fallback data:', error);
+      return {
+        totalArticles: 0,
+        articlesToday: 0,
+        totalComments: 0,
+        commentsToday: 0,
+        error: error instanceof Error ? error.message : 'Unknown error'
+      } as ContentAnalytics;
+    }
   }
 
   async getRevenueAnalytics(): Promise<RevenueAnalytics> {
-    return this.makeRequest<RevenueAnalytics>('/stats/revenue');
+    try {
+      return await this.makeRequest<RevenueAnalytics>('/stats/revenue');
+    } catch (error) {
+      console.warn('Revenue analytics API failed, returning fallback data:', error);
+      return {
+        totalRevenue: 0,
+        revenueToday: 0,
+        totalTransactions: 0,
+        transactionsToday: 0,
+        error: error instanceof Error ? error.message : 'Unknown error'
+      } as RevenueAnalytics;
+    }
   }
 
   async getFraudAnalytics(): Promise<FraudAnalytics> {
-    return this.makeRequest<FraudAnalytics>('/stats/fraud');
+    try {
+      return await this.makeRequest<FraudAnalytics>('/stats/fraud');
+    } catch (error) {
+      console.warn('Fraud analytics API failed, returning fallback data:', error);
+      return {
+        totalFraudAttempts: 0,
+        fraudAttemptsToday: 0,
+        blockedUsers: 0,
+        fraudPrevented: 0,
+        error: error instanceof Error ? error.message : 'Unknown error'
+      } as FraudAnalytics;
+    }
   }
 
   async getUserTimeseries(days: number = 30): Promise<{ data: TimeSeriesData[] }> {
@@ -231,7 +317,20 @@ class AdminApiClient {
     if (filters.fraud_score && filters.fraud_score !== 'all') params.append('fraud_score', filters.fraud_score);
 
     const query = params.toString();
-    return this.makeRequest<ReviewList>(`/reviews${query ? `?${query}` : ''}`);
+    try {
+      return await this.makeRequest<ReviewList>(`/reviews${query ? `?${query}` : ''}`);
+    } catch (error) {
+      // Provide fallback data for reviews
+      console.warn('Reviews API failed, returning fallback data:', error);
+      return {
+        reviews: [],
+        total: 0,
+        page: filters.page || 1,
+        totalPages: 0,
+        hasNext: false,
+        error: error instanceof Error ? error.message : 'Unknown error'
+      };
+    }
   }
 
   async getReview(reviewId: string): Promise<any> {

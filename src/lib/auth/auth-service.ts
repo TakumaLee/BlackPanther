@@ -127,6 +127,7 @@ class AuthService {
 
   /**
    * 獲取目前登入的管理員資訊
+   * Enhanced to not clear session on temporary server errors
    */
   async getCurrentAdmin(): Promise<AdminUser | null> {
     if (!this.tokenData?.access_token) {
@@ -155,11 +156,34 @@ class AuthService {
 
       if (!response.ok) {
         if (response.status === 401) {
-          // Token 無效，清除儲存
-          this.clearStorage();
-          return null;
+          // 只有在真正的認證錯誤時才清除 session
+          let shouldClearSession = false;
+          try {
+            const errorData = await response.json();
+            const errorMessage = errorData.detail || errorData.message || '';
+            
+            // 只有特定的錯誤訊息才清除 session
+            if (errorMessage.includes('Invalid token') ||
+                errorMessage.includes('expired') ||
+                errorMessage.includes('Token expired') ||
+                errorMessage.includes('JWT')) {
+              shouldClearSession = true;
+            }
+          } catch {
+            // 如果無法解析錯誤，假設是 token 問題
+            shouldClearSession = true;
+          }
+          
+          if (shouldClearSession) {
+            console.log('Token appears to be invalid, clearing session');
+            this.clearStorage();
+            return null;
+          }
         }
-        throw new Error(`HTTP ${response.status}`);
+        
+        // 對於其他錯誤（如 500, 503），不清除 session，只是記錄錯誤
+        console.warn(`Admin auth check failed with ${response.status}, keeping session`);
+        return this.currentUser; // 返回現有的用戶資料以保持登入狀態
       }
 
       const userData = await response.json();
@@ -173,8 +197,16 @@ class AuthService {
       return userData;
     } catch (error) {
       console.error('Get current admin error:', error);
-      this.clearStorage();
-      return null;
+      
+      // 不要在網路錯誤或伺服器錯誤時清除 session
+      if (error instanceof TypeError && error.message.includes('fetch')) {
+        console.warn('Network error during auth check, keeping session');
+        return this.currentUser; // 保持登入狀態
+      }
+      
+      // 其他錯誤也不清除 session，只是記錄
+      console.warn('Auth check error, but keeping session:', error);
+      return this.currentUser;
     }
   }
 
