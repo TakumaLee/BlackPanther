@@ -17,7 +17,20 @@ interface SidebarProps {
   className?: string
 }
 
-const navigation = [
+interface NavigationItem {
+  name: string;
+  href: string;
+  icon: React.ElementType;
+  current: boolean;
+  badge?: string | number;
+  subItems?: {
+    name: string;
+    href: string;
+    badge?: string | number;
+  }[];
+}
+
+const navigation: NavigationItem[] = [
   {
     name: '儀表板',
     href: '/dashboard',

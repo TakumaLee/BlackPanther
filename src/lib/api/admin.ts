@@ -115,14 +115,18 @@ class AdminApiClient {
       // Provide fallback data for dashboard stats
       console.warn('Dashboard stats API failed, returning fallback data:', error);
       return {
-        totalUsers: 0,
-        totalArticles: 0,
-        totalRevenue: 0,
-        totalCoinsSpent: 0,
-        activeUsers: 0,
-        blockedUsers: 0,
-        pendingReviews: 0,
-        error: error instanceof Error ? error.message : 'Unknown error'
+        total_users: 0,
+        total_articles: 0,
+        pending_reviews: 0,
+        active_articles: 0,
+        expired_articles: 0,
+        blocked_users: 0,
+        total_coins_spent: 0,
+        total_iap_revenue: 0,
+        fraud_score_high: 0,
+        user_growth_7d: 0,
+        article_growth_7d: 0,
+        popular_articles_24h: 0
       } as DashboardStats;
     }
   }
@@ -249,11 +253,15 @@ class AdminApiClient {
     } catch (error) {
       console.warn('User analytics API failed, returning fallback data:', error);
       return {
-        totalUsers: 0,
-        activeUsers: 0,
-        newUsersToday: 0,
-        userGrowthRate: 0,
-        error: error instanceof Error ? error.message : 'Unknown error'
+        total_users: 0,
+        active_users_today: 0,
+        active_users_week: 0,
+        active_users_month: 0,
+        new_users_today: 0,
+        new_users_week: 0,
+        new_users_month: 0,
+        user_retention_rate: 0,
+        avg_session_duration: 0
       } as UserAnalytics;
     }
   }
@@ -264,11 +272,16 @@ class AdminApiClient {
     } catch (error) {
       console.warn('Content analytics API failed, returning fallback data:', error);
       return {
-        totalArticles: 0,
-        articlesToday: 0,
-        totalComments: 0,
-        commentsToday: 0,
-        error: error instanceof Error ? error.message : 'Unknown error'
+        total_articles: 0,
+        articles_today: 0,
+        articles_week: 0,
+        articles_month: 0,
+        active_articles: 0,
+        expired_articles: 0,
+        preserved_articles: 0,
+        avg_article_lifetime: 0,
+        total_comments: 0,
+        total_reactions: 0
       } as ContentAnalytics;
     }
   }
@@ -279,11 +292,15 @@ class AdminApiClient {
     } catch (error) {
       console.warn('Revenue analytics API failed, returning fallback data:', error);
       return {
-        totalRevenue: 0,
-        revenueToday: 0,
-        totalTransactions: 0,
-        transactionsToday: 0,
-        error: error instanceof Error ? error.message : 'Unknown error'
+        total_revenue: 0,
+        revenue_today: 0,
+        revenue_week: 0,
+        revenue_month: 0,
+        total_transactions: 0,
+        avg_transaction_value: 0,
+        top_products: [],
+        coins_purchased: 0,
+        coins_spent: 0
       } as RevenueAnalytics;
     }
   }
@@ -294,11 +311,12 @@ class AdminApiClient {
     } catch (error) {
       console.warn('Fraud analytics API failed, returning fallback data:', error);
       return {
-        totalFraudAttempts: 0,
-        fraudAttemptsToday: 0,
-        blockedUsers: 0,
-        fraudPrevented: 0,
-        error: error instanceof Error ? error.message : 'Unknown error'
+        high_risk_users: 0,
+        medium_risk_users: 0,
+        low_risk_users: 0,
+        blocked_attempts: 0,
+        fraud_prevented_amount: 0,
+        common_fraud_patterns: []
       } as FraudAnalytics;
     }
   }
@@ -334,9 +352,8 @@ class AdminApiClient {
         reviews: [],
         total: 0,
         page: filters.page || 1,
-        totalPages: 0,
-        hasNext: false,
-        error: error instanceof Error ? error.message : 'Unknown error'
+        limit: filters.limit || 20,
+        has_next: false
       };
     }
   }
