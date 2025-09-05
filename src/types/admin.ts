@@ -36,6 +36,30 @@ export interface RevenueData {
   transactions: number;
 }
 
+// Article type for user's recent articles
+export interface UserArticle {
+  id: string;
+  title: string;
+  content: string;
+  views: number;
+  likes: number;
+  comments_count: number;
+  created_at: string;
+  expires_at?: string;
+  is_expired: boolean;
+}
+
+// Transaction type for user's coin transactions
+export interface UserTransaction {
+  id: string;
+  type: 'earn' | 'spend' | 'purchase';
+  amount: number;
+  description: string;
+  created_at: string;
+  related_item_id?: string;
+  related_item_type?: string;
+}
+
 export interface UserInfo {
   id: string;
   email?: string;
@@ -62,8 +86,8 @@ export interface UserDetail extends UserInfo {
   invite_permissions: string[];
   blocked_reason?: string;
   blocked_until?: string;
-  recent_articles: any[];
-  recent_transactions: any[];
+  recent_articles: UserArticle[];
+  recent_transactions: UserTransaction[];
 }
 
 export interface UserList {
@@ -256,7 +280,7 @@ export interface ReviewFilters {
 }
 
 // API Response Types
-export interface ApiResponse<T = any> {
+export interface ApiResponse<T = unknown> {
   success: boolean;
   data?: T;
   message?: string;
@@ -290,4 +314,50 @@ export interface ChartConfig {
   yAxisLabel?: string;
   title?: string;
   type?: 'line' | 'bar' | 'pie' | 'area';
+}
+
+// Additional types for API responses
+export interface ReviewDetail {
+  id: string;
+  status: 'pending' | 'approved' | 'rejected';
+  user_id: string;
+  target_user_id: string;
+  request_reason: string;
+  fraud_score: number;
+  admin_notes?: string;
+  reviewed_by?: string;
+  reviewed_at?: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface ReviewStatistics {
+  total_pending: number;
+  total_approved: number;
+  total_rejected: number;
+  high_risk_count: number;
+  approval_rate: number;
+  average_review_time: number;
+}
+
+export interface BlockStatistics {
+  total_user_blocks: number;
+  total_ip_blocks: number;
+  active_blocks: number;
+  expired_blocks: number;
+  blocks_today: number;
+}
+
+export interface UserArticlesResponse {
+  articles: UserArticle[];
+  total: number;
+  page: number;
+  has_next: boolean;
+}
+
+export interface UserTransactionsResponse {
+  transactions: UserTransaction[];
+  total: number;
+  page: number;
+  has_next: boolean;
 }

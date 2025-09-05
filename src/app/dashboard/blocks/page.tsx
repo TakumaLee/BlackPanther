@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { adminApi } from '@/lib/api/admin'
-import { BlockList, IPBlockList, BlockInfo, IPBlockInfo, CreateIPBlockRequest, UpdateBlockRequest } from '@/types/admin'
+import { BlockInfo, IPBlockInfo, UpdateBlockRequest } from '@/types/admin'
 import { useAuth } from '@/lib/auth/auth-context'
 import { 
   Shield, 
@@ -182,6 +182,7 @@ export default function BlocksPage() {
     if (user) {
       fetchBlocks()
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user, activeTab, currentPage, searchTerm])
 
   const fetchBlocks = async () => {

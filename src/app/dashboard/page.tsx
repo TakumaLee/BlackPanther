@@ -7,7 +7,6 @@ import { useAuth } from '@/lib/auth/auth-context'
 import Link from 'next/link'
 import { 
   Clock, 
-  CheckCircle, 
   XCircle, 
   Users, 
   TrendingUp, 

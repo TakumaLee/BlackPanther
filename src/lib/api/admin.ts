@@ -24,7 +24,12 @@ import {
   TimeSeriesData,
   ReviewList,
   ReviewFilters,
-  ReviewActionRequest
+  ReviewActionRequest,
+  ReviewDetail,
+  ReviewStatistics,
+  BlockStatistics,
+  UserArticlesResponse,
+  UserTransactionsResponse
 } from '@/types/admin';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
@@ -167,11 +172,11 @@ class AdminApiClient {
     });
   }
 
-  async getUserArticles(userId: string, page: number = 1, limit: number = 10): Promise<any> {
+  async getUserArticles(userId: string, page: number = 1, limit: number = 10): Promise<UserArticlesResponse> {
     return this.makeRequest(`/users/${userId}/articles?page=${page}&limit=${limit}`);
   }
 
-  async getUserTransactions(userId: string, page: number = 1, limit: number = 10): Promise<any> {
+  async getUserTransactions(userId: string, page: number = 1, limit: number = 10): Promise<UserTransactionsResponse> {
     return this.makeRequest(`/users/${userId}/transactions?page=${page}&limit=${limit}`);
   }
 
@@ -233,7 +238,7 @@ class AdminApiClient {
     });
   }
 
-  async getBlockStats(): Promise<any> {
+  async getBlockStats(): Promise<BlockStatistics> {
     return this.makeRequest('/blocks/stats');
   }
 
@@ -306,7 +311,7 @@ class AdminApiClient {
     return this.makeRequest(`/stats/timeseries/revenue?days=${days}`);
   }
 
-  async exportStatistics(startDate: string, endDate: string, format: 'json' | 'csv' = 'json'): Promise<any> {
+  async exportStatistics(startDate: string, endDate: string, format: 'json' | 'csv' = 'json'): Promise<Blob | unknown> {
     return this.makeRequest(`/stats/export?start_date=${startDate}&end_date=${endDate}&format=${format}`);
   }
 
@@ -336,7 +341,7 @@ class AdminApiClient {
     }
   }
 
-  async getReview(reviewId: string): Promise<any> {
+  async getReview(reviewId: string): Promise<ReviewDetail> {
     return this.makeRequest(`/reviews/${reviewId}`);
   }
 
@@ -347,7 +352,7 @@ class AdminApiClient {
     });
   }
 
-  async getReviewStatistics(): Promise<any> {
+  async getReviewStatistics(): Promise<ReviewStatistics> {
     return this.makeRequest('/reviews/statistics');
   }
 }

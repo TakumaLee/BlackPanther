@@ -48,7 +48,7 @@ class ReviewsAPI {
             throw new Error(`權限錯誤: ${errorMessage}`);
           }
         }
-      } catch (parseError) {
+      } catch {
         // 如果無法解析錯誤回應
         if (response.status === 401) {
           // 對於無法解析的 401 錯誤，不要立即登出

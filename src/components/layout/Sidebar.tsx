@@ -5,13 +5,10 @@ import { usePathname } from 'next/navigation'
 import Link from 'next/link'
 import { 
   BarChart3, 
-  CheckCircle, 
   Home, 
   Shield, 
-  Users, 
-  XCircle,
+  Users,
   Clock,
-  AlertTriangle,
   ChevronDown,
   ChevronRight
 } from 'lucide-react'

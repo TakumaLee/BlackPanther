@@ -2,13 +2,13 @@
 
 import { useState, useEffect } from 'react'
 import { adminApi } from '@/lib/api/admin'
-import { UserList, UserInfo, UserFilters } from '@/types/admin'
+import { UserInfo, UserFilters } from '@/types/admin'
 import { useAuth } from '@/lib/auth/auth-context'
 import Link from 'next/link'
+import Image from 'next/image'
 import { 
   Users, 
-  Search, 
-  Filter,
+  Search,
   Eye,
   Shield,
   ShieldOff,
@@ -51,9 +51,11 @@ function UserCard({ user, onBlock, onUnblock }: UserCardProps) {
       <div className="flex items-start justify-between">
         <div className="flex items-center space-x-3">
           {user.avatar_url ? (
-            <img 
+            <Image 
               src={user.avatar_url} 
               alt={user.display_name || user.username || '用戶'}
+              width={48}
+              height={48}
               className="h-12 w-12 rounded-full object-cover"
             />
           ) : (
@@ -180,11 +182,10 @@ export default function UsersPage() {
     fraud_score_min: undefined
   })
 
-  // 封鎖/解封操作狀態
-  const [blockingUserId, setBlockingUserId] = useState<string | null>(null)
 
   useEffect(() => {
     fetchUsers()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [filters])
 
   const fetchUsers = async () => {
@@ -211,7 +212,7 @@ export default function UsersPage() {
     setFilters(prev => ({ ...prev, search: searchTerm, page: 1 }))
   }
 
-  const handleFilterChange = (key: keyof UserFilters, value: any) => {
+  const handleFilterChange = (key: keyof UserFilters, value: string | number | boolean | undefined) => {
     setFilters(prev => ({ ...prev, [key]: value, page: 1 }))
   }
 
@@ -223,7 +224,6 @@ export default function UsersPage() {
     const reason = prompt('請輸入封鎖原因:')
     if (!reason) return
 
-    setBlockingUserId(userId)
     try {
       await adminApi.blockUser({ user_id: userId, reason })
       fetchUsers() // 重新獲取數據
@@ -231,7 +231,6 @@ export default function UsersPage() {
       console.error('Failed to block user:', err)
       alert('封鎖用戶失敗')
     } finally {
-      setBlockingUserId(null)
     }
   }
 
@@ -239,7 +238,6 @@ export default function UsersPage() {
     const reason = prompt('請輸入解除封鎖原因:')
     if (!reason) return
 
-    setBlockingUserId(userId)
     try {
       await adminApi.unblockUser({ user_id: userId, reason })
       fetchUsers() // 重新獲取數據
@@ -247,7 +245,6 @@ export default function UsersPage() {
       console.error('Failed to unblock user:', err)
       alert('解除封鎖失敗')
     } finally {
-      setBlockingUserId(null)
     }
   }
 
