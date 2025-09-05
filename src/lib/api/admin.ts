@@ -73,8 +73,11 @@ class AdminApiClient {
           }
         } catch {
           // 如果無法解析錯誤JSON，使用狀態碼
+          // 但對於 401，不要立即標記為 auth_error，除非確定是認證問題
           if (response.status === 401) {
-            errorType = 'auth_error';
+            // 無法確定是真正的認證錯誤，標記為一般 API 錯誤
+            errorType = 'api_error';
+            errorMessage = 'API 訪問被拒絕，可能是權限不足或 API 不存在';
           } else if (response.status === 403) {
             errorType = 'permission_error';
           } else if (response.status >= 500) {

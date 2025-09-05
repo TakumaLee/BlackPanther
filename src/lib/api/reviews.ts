@@ -23,17 +23,43 @@ class ReviewsAPI {
     })
 
     if (!response.ok) {
-      // 如果是 401 未認證，清除本地認證資料並重定向
-      if (response.status === 401) {
-        await authService.logout()
-        if (typeof window !== 'undefined') {
-          window.location.href = '/'
+      let errorMessage = `HTTP ${response.status}`;
+      
+      try {
+        const errorData = await response.json();
+        errorMessage = errorData.message || errorData.detail || errorMessage;
+        
+        // 只有在真正的認證錯誤時才清除認證並重定向
+        if (response.status === 401) {
+          // 檢查是否為真正的 token 過期或無效
+          if (errorMessage.includes('Invalid token') || 
+              errorMessage.includes('expired') ||
+              errorMessage.includes('Token expired') ||
+              errorMessage.includes('JWT')) {
+            console.log('Token appears to be invalid, logging out');
+            await authService.logout()
+            if (typeof window !== 'undefined') {
+              window.location.href = '/'
+            }
+            throw new Error('登入已過期，請重新登入')
+          } else {
+            // 對於其他 401 錯誤（如權限不足、API 不存在等），不清除認證
+            console.warn(`API call failed with 401 but keeping session: ${errorMessage}`);
+            throw new Error(`權限錯誤: ${errorMessage}`);
+          }
         }
-        throw new Error('登入已過期，請重新登入')
+      } catch (parseError) {
+        // 如果無法解析錯誤回應
+        if (response.status === 401) {
+          // 對於無法解析的 401 錯誤，不要立即登出
+          // 可能是臨時的網路問題或伺服器錯誤
+          console.warn('401 error with unparsable response, but keeping session for now');
+          throw new Error('API 訪問被拒絕，請稍後再試')
+        }
+        errorMessage = 'Network error';
       }
       
-      const error = await response.json().catch(() => ({ message: 'Network error' }))
-      throw new Error(error.message || `HTTP ${response.status}`)
+      throw new Error(errorMessage);
     }
 
     return response.json()
