@@ -1,5 +1,6 @@
 'use client'
 
+import { useState } from 'react'
 import { usePathname } from 'next/navigation'
 import Link from 'next/link'
 import { 
@@ -10,7 +11,9 @@ import {
   Users, 
   XCircle,
   Clock,
-  AlertTriangle
+  AlertTriangle,
+  ChevronDown,
+  ChevronRight
 } from 'lucide-react'
 
 interface SidebarProps {
@@ -25,35 +28,29 @@ const navigation = [
     current: false,
   },
   {
-    name: '待審核列表',
+    name: '邀請審核',
     href: '/dashboard/reviews',
     icon: Clock,
     current: false,
-    badge: '12' // 可以動態更新
-  },
-  {
-    name: '已批准',
-    href: '/dashboard/reviews?status=approved',
-    icon: CheckCircle,
-    current: false,
-  },
-  {
-    name: '已拒絕',
-    href: '/dashboard/reviews?status=rejected',
-    icon: XCircle,
-    current: false,
-  },
-  {
-    name: '高風險',
-    href: '/dashboard/reviews?fraud_score=high',
-    icon: AlertTriangle,
-    current: false,
-  },
-  {
-    name: '統計報告',
-    href: '/dashboard/stats',
-    icon: BarChart3,
-    current: false,
+    // badge 數量應該從 API 動態獲取
+    subItems: [
+      {
+        name: '待審核',
+        href: '/dashboard/reviews?status=pending',
+      },
+      {
+        name: '高風險',
+        href: '/dashboard/reviews?fraud_score=high',
+      },
+      {
+        name: '已批准',
+        href: '/dashboard/reviews?status=approved',
+      },
+      {
+        name: '已拒絕',
+        href: '/dashboard/reviews?status=rejected',
+      }
+    ]
   },
   {
     name: '用戶管理',
@@ -67,17 +64,33 @@ const navigation = [
     icon: Shield,
     current: false,
   },
+  {
+    name: '統計報告',
+    href: '/dashboard/stats',
+    icon: BarChart3,
+    current: false,
+  },
 ]
 
 export default function Sidebar({ className = '' }: SidebarProps) {
   const pathname = usePathname()
+  const [expandedItems, setExpandedItems] = useState<string[]>(['邀請審核'])
 
-  // 更新當前頁面狀態
-  const navigationWithCurrent = navigation.map(item => ({
-    ...item,
-    current: pathname === item.href || 
-             (item.href !== '/dashboard' && pathname.startsWith(item.href))
-  }))
+  const toggleExpand = (itemName: string) => {
+    setExpandedItems(prev => 
+      prev.includes(itemName) 
+        ? prev.filter(name => name !== itemName)
+        : [...prev, itemName]
+    )
+  }
+
+  // 檢查當前路徑是否匹配
+  const isCurrentPath = (href: string) => {
+    if (href === '/dashboard') {
+      return pathname === href
+    }
+    return pathname.startsWith(href.split('?')[0])
+  }
 
   return (
     <div className={`flex flex-col w-64 ${className}`}>
@@ -100,39 +113,121 @@ export default function Sidebar({ className = '' }: SidebarProps) {
         
         <div className="mt-8 flex-grow flex flex-col">
           <nav className="flex-1 px-2 space-y-1">
-            {navigationWithCurrent.map((item) => {
+            {navigation.map((item) => {
               const Icon = item.icon
+              const isExpanded = expandedItems.includes(item.name)
+              const isCurrent = isCurrentPath(item.href)
+              
               return (
-                <Link
-                  key={item.name}
-                  href={item.href}
-                  className={`
-                    group flex items-center px-2 py-2 text-sm font-medium rounded-md transition-colors duration-200
-                    ${item.current
-                      ? 'bg-blue-50 text-blue-700 border-r-2 border-blue-600'
-                      : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
-                    }
-                  `}
-                >
-                  <Icon
-                    className={`
-                      mr-3 flex-shrink-0 h-5 w-5 transition-colors duration-200
-                      ${item.current ? 'text-blue-500' : 'text-gray-400 group-hover:text-gray-500'}
-                    `}
-                  />
-                  {item.name}
-                  {item.badge && (
-                    <span className={`
-                      ml-auto inline-flex items-center justify-center px-2 py-1 text-xs font-medium rounded-full
-                      ${item.current 
-                        ? 'bg-blue-100 text-blue-600' 
-                        : 'bg-gray-100 text-gray-600 group-hover:bg-gray-200'
-                      }
-                    `}>
-                      {item.badge}
-                    </span>
+                <div key={item.name}>
+                  {item.subItems ? (
+                    // 有子選單的項目
+                    <>
+                      <button
+                        onClick={() => toggleExpand(item.name)}
+                        className={`
+                          w-full group flex items-center px-2 py-2 text-sm font-medium rounded-md transition-colors duration-200
+                          ${isCurrent
+                            ? 'bg-blue-50 text-blue-700'
+                            : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
+                          }
+                        `}
+                      >
+                        <Icon
+                          className={`
+                            mr-3 flex-shrink-0 h-5 w-5 transition-colors duration-200
+                            ${isCurrent ? 'text-blue-500' : 'text-gray-400 group-hover:text-gray-500'}
+                          `}
+                        />
+                        <span className="flex-1 text-left">{item.name}</span>
+                        {item.badge && (
+                          <span className={`
+                            mx-2 inline-flex items-center justify-center px-2 py-0.5 text-xs font-medium rounded-full
+                            ${isCurrent 
+                              ? 'bg-blue-100 text-blue-600' 
+                              : 'bg-red-100 text-red-600'
+                            }
+                          `}>
+                            {item.badge}
+                          </span>
+                        )}
+                        {isExpanded ? (
+                          <ChevronDown className="h-4 w-4 text-gray-400" />
+                        ) : (
+                          <ChevronRight className="h-4 w-4 text-gray-400" />
+                        )}
+                      </button>
+                      
+                      {/* 子選單 */}
+                      {isExpanded && (
+                        <div className="ml-10 mt-1 space-y-1">
+                          {item.subItems.map((subItem) => {
+                            const isSubCurrent = pathname === subItem.href
+                            return (
+                              <Link
+                                key={subItem.name}
+                                href={subItem.href}
+                                className={`
+                                  group flex items-center px-3 py-1.5 text-sm font-medium rounded-md transition-colors duration-200
+                                  ${isSubCurrent
+                                    ? 'bg-blue-50 text-blue-700'
+                                    : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
+                                  }
+                                `}
+                              >
+                                <span className="flex-1">{subItem.name}</span>
+                                {subItem.badge && (
+                                  <span className={`
+                                    inline-flex items-center justify-center px-2 py-0.5 text-xs font-medium rounded-full
+                                    ${isSubCurrent 
+                                      ? 'bg-blue-100 text-blue-600' 
+                                      : subItem.name === '高風險' 
+                                        ? 'bg-orange-100 text-orange-600'
+                                        : 'bg-gray-100 text-gray-600'
+                                    }
+                                  `}>
+                                    {subItem.badge}
+                                  </span>
+                                )}
+                              </Link>
+                            )
+                          })}
+                        </div>
+                      )}
+                    </>
+                  ) : (
+                    // 沒有子選單的項目
+                    <Link
+                      href={item.href}
+                      className={`
+                        group flex items-center px-2 py-2 text-sm font-medium rounded-md transition-colors duration-200
+                        ${isCurrent
+                          ? 'bg-blue-50 text-blue-700 border-r-2 border-blue-600'
+                          : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
+                        }
+                      `}
+                    >
+                      <Icon
+                        className={`
+                          mr-3 flex-shrink-0 h-5 w-5 transition-colors duration-200
+                          ${isCurrent ? 'text-blue-500' : 'text-gray-400 group-hover:text-gray-500'}
+                        `}
+                      />
+                      {item.name}
+                      {item.badge && (
+                        <span className={`
+                          ml-auto inline-flex items-center justify-center px-2 py-1 text-xs font-medium rounded-full
+                          ${isCurrent 
+                            ? 'bg-blue-100 text-blue-600' 
+                            : 'bg-gray-100 text-gray-600 group-hover:bg-gray-200'
+                          }
+                        `}>
+                          {item.badge}
+                        </span>
+                      )}
+                    </Link>
                   )}
-                </Link>
+                </div>
               )
             })}
           </nav>
