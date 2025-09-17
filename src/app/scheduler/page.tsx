@@ -43,12 +43,14 @@ export default function SchedulerPage() {
     autoConnect: false, // Disabled until backend WebSocket is ready
     onConnect: () => console.log('WebSocket connected'),
     onDisconnect: () => console.log('WebSocket disconnected'),
-    onError: (error) => console.log('WebSocket not available yet'), // Suppress error
+    onError: () => console.log('WebSocket not available yet'), // Suppress error
     onMessage: (message) => {
       console.log('WebSocket message:', message)
       // Handle real-time updates here
-      if (message.type === 'task_execution_update') {
-        handleExecutionUpdate(message.payload)
+      if (message && typeof message === 'object' && 'type' in message && message.type === 'task_execution_update') {
+        if ('payload' in message && typeof message.payload === 'object') {
+          handleExecutionUpdate(message.payload as { execution_id: string; status: string })
+        }
       }
     },
   })
@@ -58,7 +60,7 @@ export default function SchedulerPage() {
     setExecutions(prev =>
       prev.map(exec =>
         exec.id === update.execution_id
-          ? { ...exec, status: update.status }
+          ? { ...exec, status: update.status as TaskExecution['status'] }
           : exec
       )
     )

@@ -303,7 +303,7 @@ export const getMockDashboardData = (): DashboardData => {
   }
 }
 
-export const getMockExecutions = (filters?: any): TaskExecution[] => {
+export const getMockExecutions = (): TaskExecution[] => {
   const baseExecutions = getMockDashboardData().recent_executions
 
   // Generate more mock executions for history page

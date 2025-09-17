@@ -286,7 +286,7 @@ export const useSchedulerWebSocketSubscription = (
 
   useEffect(() => {
     if (ws && 'subscribe' in ws) {
-      const unsubscribe = (ws as SchedulerWebSocket).subscribe(eventType, handler)
+      const unsubscribe = (ws as unknown as SchedulerWebSocket).subscribe(eventType, handler)
       return unsubscribe
     }
   }, [ws, eventType, handler])
@@ -297,35 +297,35 @@ export const useTaskExecutionUpdates = (
   ws: WebSocketConnection,
   onUpdate: (update: TaskExecutionUpdate) => void
 ): void => {
-  useSchedulerWebSocketSubscription(ws, 'task_execution_update', onUpdate, [onUpdate])
+  useSchedulerWebSocketSubscription(ws, 'task_execution_update', (data: unknown) => onUpdate(data as TaskExecutionUpdate))
 }
 
 export const useLeaderElectionChanges = (
   ws: WebSocketConnection,
   onChange: (change: LeaderElectionChange) => void
 ): void => {
-  useSchedulerWebSocketSubscription(ws, 'leader_election_change', onChange, [onChange])
+  useSchedulerWebSocketSubscription(ws, 'leader_election_change', (data: unknown) => onChange(data as LeaderElectionChange))
 }
 
 export const useSystemMetricsUpdates = (
   ws: WebSocketConnection,
   onUpdate: (metrics: unknown) => void
 ): void => {
-  useSchedulerWebSocketSubscription(ws, 'system_metrics_update', onUpdate, [onUpdate])
+  useSchedulerWebSocketSubscription(ws, 'system_metrics_update', onUpdate)
 }
 
 export const useTaskStatusChanges = (
   ws: WebSocketConnection,
   onStatusChange: (change: unknown) => void
 ): void => {
-  useSchedulerWebSocketSubscription(ws, 'task_status_change', onStatusChange, [onStatusChange])
+  useSchedulerWebSocketSubscription(ws, 'task_status_change', onStatusChange)
 }
 
 export const useAlertNotifications = (
   ws: WebSocketConnection,
   onAlert: (alert: unknown) => void
 ): void => {
-  useSchedulerWebSocketSubscription(ws, 'alert', onAlert, [onAlert])
+  useSchedulerWebSocketSubscription(ws, 'alert', onAlert)
 }
 
 // Utility function to create WebSocket URL

@@ -1,0 +1,24 @@
+
+> dashboard@0.1.0 build
+> next build --turbopack
+
+   ▲ Next.js 15.5.2 (Turbopack)
+   - Environments: .env.local, .env
+
+   Creating an optimized production build ...
+ ✓ Finished writing to disk in 154ms
+ ✓ Compiled successfully in 5.3s
+   Linting and checking validity of types ...
+Failed to compile.
+
+./src/lib/websocket/scheduler-socket.ts:321:79
+Type error: Expected 3 arguments, but got 4.
+
+[0m [90m 319 |[39m   onStatusChange[33m:[39m (change[33m:[39m unknown) [33m=>[39m [36mvoid[39m
+ [90m 320 |[39m )[33m:[39m [36mvoid[39m [33m=>[39m {
+[31m[1m>[22m[39m[90m 321 |[39m   useSchedulerWebSocketSubscription(ws[33m,[39m [32m'task_status_change'[39m[33m,[39m onStatusChange[33m,[39m [onStatusChange])
+ [90m     |[39m                                                                               [31m[1m^[22m[39m
+ [90m 322 |[39m }
+ [90m 323 |[39m
+ [90m 324 |[39m [36mexport[39m [36mconst[39m useAlertNotifications [33m=[39m ([0m
+Next.js build worker exited with code: 1 and signal: null
