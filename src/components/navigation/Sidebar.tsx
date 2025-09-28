@@ -10,6 +10,7 @@ import {
   Home,
   Clock,
   Mail,
+  DollarSign,
 } from 'lucide-react';
 import classNames from 'classnames';
 
@@ -25,6 +26,7 @@ export default function Sidebar() {
 
   const navigation: SidebarItem[] = [
     { name: 'Dashboard', href: '/', icon: <Home className="w-5 h-5" /> },
+    { name: 'Economy', href: '/economy', icon: <DollarSign className="w-5 h-5" /> },
     { name: 'Scheduler', href: '/scheduler', icon: <Clock className="w-5 h-5" /> },
     { name: 'Invites', href: '/invites', icon: <Mail className="w-5 h-5" /> },
     { name: 'Users', href: '/users', icon: <Users className="w-5 h-5" /> },
