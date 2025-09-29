@@ -98,3 +98,24 @@ body {
     background: rgba(36, 48, 65, 0.7);
   }
 }
+
+/* 登入頁面特定樣式 */
+.login-gradient {
+  background: linear-gradient(135deg, #f0f9ff 0%, #dbeafe 50%, #e0e7ff 100%);
+}
+
+/* 改善焦點可見性 */
+.focus-visible {
+  outline: 2px solid #3b82f6;
+  outline-offset: 2px;
+}
+
+/* 確保高對比度 */
+.high-contrast-text {
+  color: #1f2937;
+  font-weight: 500;
+}
+
+.high-contrast-muted {
+  color: #6b7280;
+}

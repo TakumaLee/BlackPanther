@@ -44,26 +44,35 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50">
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100">
       <div className="w-full max-w-md px-6">
-        <Card>
-          <CardHeader className="space-y-1">
-            <CardTitle className="text-2xl text-center">管理員登入</CardTitle>
-            <CardDescription className="text-center">
-              Black Swamp 管理控制台
+        {/* 頁面標題區域 */}
+        <div className="text-center mb-8">
+          <div className="w-16 h-16 bg-gradient-to-br from-blue-600 to-indigo-600 rounded-xl flex items-center justify-center mx-auto mb-4 shadow-lg">
+            <LogIn className="h-8 w-8 text-white" />
+          </div>
+          <h1 className="text-3xl font-bold text-gray-900 mb-2">Black Swamp</h1>
+          <p className="text-gray-600">管理控制台</p>
+        </div>
+
+        <Card className="backdrop-blur-sm bg-white/90 border-white/20 shadow-xl">
+          <CardHeader className="space-y-1 pb-4">
+            <CardTitle className="text-xl text-center text-gray-900">管理員登入</CardTitle>
+            <CardDescription className="text-center text-gray-600">
+              請輸入您的管理員應證資料
             </CardDescription>
           </CardHeader>
           <CardContent>
             <form onSubmit={handleSubmit} className="space-y-4">
               {error && (
-                <Alert variant="destructive">
-                  <AlertCircle className="h-4 w-4" />
-                  <AlertDescription>{error}</AlertDescription>
+                <Alert variant="destructive" className="border-red-300 bg-red-50 text-red-800">
+                  <AlertCircle className="h-4 w-4 text-red-600" />
+                  <AlertDescription className="text-red-800 font-medium">{error}</AlertDescription>
                 </Alert>
               )}
 
               <div className="space-y-2">
-                <Label htmlFor="email">電子郵件</Label>
+                <Label htmlFor="email" className="text-sm font-medium text-gray-700">電子郵件</Label>
                 <Input
                   id="email"
                   type="email"
@@ -72,11 +81,12 @@ export default function LoginPage() {
                   onChange={(e) => setEmail(e.target.value)}
                   disabled={loading}
                   required
+                  className="h-11 border-gray-300 focus:border-blue-500 focus:ring-blue-500/20 text-gray-900 placeholder:text-gray-500"
                 />
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="password">密碼</Label>
+                <Label htmlFor="password" className="text-sm font-medium text-gray-700">密碼</Label>
                 <Input
                   id="password"
                   type="password"
@@ -85,22 +95,23 @@ export default function LoginPage() {
                   onChange={(e) => setPassword(e.target.value)}
                   disabled={loading}
                   required
+                  className="h-11 border-gray-300 focus:border-blue-500 focus:ring-blue-500/20 text-gray-900 placeholder:text-gray-500"
                 />
               </div>
 
               <Button
                 type="submit"
-                className="w-full"
+                className="w-full h-11 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-medium shadow-lg hover:shadow-xl transition-all duration-200"
                 disabled={loading || !email || !password}
               >
                 {loading ? (
                   <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    <Loader2 className="mr-2 h-5 w-5 animate-spin" />
                     登入中...
                   </>
                 ) : (
                   <>
-                    <LogIn className="mr-2 h-4 w-4" />
+                    <LogIn className="mr-2 h-5 w-5" />
                     登入
                   </>
                 )}
@@ -108,14 +119,14 @@ export default function LoginPage() {
 
               {/* 開發環境提示 */}
               {process.env.NODE_ENV === 'development' && (
-                <div className="pt-4 border-t">
-                  <p className="text-sm text-gray-500 text-center mb-2">
+                <div className="pt-4 border-t border-gray-200">
+                  <p className="text-sm text-gray-600 text-center mb-3">
                     開發環境測試帳號
                   </p>
                   <Button
                     type="button"
                     variant="outline"
-                    className="w-full"
+                    className="w-full h-10 border-gray-300 text-gray-700 hover:bg-gray-50 hover:border-gray-400 transition-colors"
                     onClick={fillTestCredentials}
                   >
                     使用測試帳號 (admin@blackswamp.com)
@@ -126,9 +137,15 @@ export default function LoginPage() {
           </CardContent>
         </Card>
 
-        <p className="text-center text-sm text-gray-500 mt-6">
-          © 2024 Black Swamp. All rights reserved.
-        </p>
+        {/* 版權資訊 */}
+        <div className="text-center mt-8">
+          <p className="text-sm text-gray-600">
+            © 2024 Black Swamp. All rights reserved.
+          </p>
+          <p className="text-xs text-gray-500 mt-1">
+            版本 2.1.0 - 安全管理平台
+          </p>
+        </div>
       </div>
     </div>
   );

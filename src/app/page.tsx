@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
 import {
   TrendingUp,
   Users,
@@ -12,11 +13,15 @@ import {
   UserPlus,
   Activity,
   ArrowUpRight,
-  // ArrowDownRight,
   Clock,
-  CheckCircle2
+  CheckCircle2,
+  LogIn,
+  LogOut,
+  User
 } from 'lucide-react';
 import { useEffect, useState } from 'react';
+import { useAuth } from '@/lib/auth/auth-context';
+import { useRouter } from 'next/navigation';
 
 // 數字動畫 hook
 function useAnimatedValue(end: number, duration: number = 1000) {
@@ -39,11 +44,27 @@ function useAnimatedValue(end: number, duration: number = 1000) {
 }
 
 export default function HomePage() {
+  const { user, logout, loading } = useAuth();
+  const router = useRouter();
+
   // 模擬數據 - 實際應從 API 獲取
   const todayActiveUsers = useAnimatedValue(128, 800);
   const todayArticles = useAnimatedValue(42, 900);
   const todayTransactions = useAnimatedValue(1234, 1000);
   const systemUptime = 99.9;
+
+  const handleLogin = () => {
+    router.push('/login');
+  };
+
+  const handleLogout = async () => {
+    try {
+      await logout();
+      // User will stay on this page after logout
+    } catch (error) {
+      console.error('Logout failed:', error);
+    }
+  };
 
   const dashboardCards = [
     {
@@ -144,177 +165,250 @@ export default function HomePage() {
   return (
     <div className="min-h-screen bg-[var(--background)]">
       <div className="container mx-auto px-6 py-8 max-w-7xl">
-        {/* 頁面標題區塊 */}
+        {/* 頁面標題區塊與認證導航 */}
         <div className="mb-8 animate-fade-in">
-          <h1 className="text-3xl font-bold text-[var(--foreground)] mb-2">
-            管理控制台
-          </h1>
-          <div className="flex items-center gap-2 text-[var(--text-secondary)]">
-            <Clock className="h-4 w-4" />
-            <p>歡迎回來，管理員 • 最後登入時間：今天 09:30</p>
+          <div className="flex justify-between items-start mb-4">
+            <div>
+              <h1 className="text-3xl font-bold text-[var(--foreground)] mb-2">
+                管理控制台
+              </h1>
+              <div className="flex items-center gap-2 text-[var(--text-secondary)]">
+                <Clock className="h-4 w-4" />
+                {user ? (
+                  <p>歡迎回來，{user.email?.split('@')[0] || user.username || '管理員'} • 最後登入時間：今天 09:30</p>
+                ) : (
+                  <p>Black Swamp 管理控制台 • 請登入以查看完整功能</p>
+                )}
+              </div>
+            </div>
+
+            {/* 認證導航按鈕 */}
+            <div className="flex items-center gap-3">
+              {loading ? (
+                <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600"></div>
+              ) : user ? (
+                <div className="flex items-center gap-3">
+                  <div className="flex items-center gap-2 px-3 py-2 bg-[var(--surface)] rounded-lg border border-[var(--border)]">
+                    <div className="h-6 w-6 bg-blue-600 rounded-full flex items-center justify-center">
+                      <User className="h-3 w-3 text-white" />
+                    </div>
+                    <span className="text-sm text-[var(--foreground)]">
+                      {user.email?.split('@')[0] || user.username || '管理員'}
+                    </span>
+                  </div>
+                  <Button
+                    onClick={handleLogout}
+                    variant="outline"
+                    size="sm"
+                    className="flex items-center gap-2"
+                  >
+                    <LogOut className="h-4 w-4" />
+                    登出
+                  </Button>
+                  <Link href="/dashboard">
+                    <Button size="sm" className="flex items-center gap-2">
+                      進入管理面板
+                    </Button>
+                  </Link>
+                </div>
+              ) : (
+                <Button
+                  onClick={handleLogin}
+                  size="sm"
+                  className="flex items-center gap-2"
+                >
+                  <LogIn className="h-4 w-4" />
+                  登入
+                </Button>
+              )}
+            </div>
           </div>
         </div>
 
-        {/* 關鍵指標卡片區 */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-          <Card className="border-[var(--border)] bg-[var(--surface)] hover:shadow-lg transition-all duration-300 animate-fade-in" style={{ animationDelay: '0.1s' }}>
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between mb-2">
-                <p className="text-sm text-[var(--text-secondary)]">今日活躍用戶</p>
-                <Users className="h-4 w-4 text-blue-600" />
-              </div>
-              <div className="flex items-baseline gap-2">
-                <p className="text-2xl font-bold text-[var(--foreground)]">{todayActiveUsers.toLocaleString()}</p>
-                <span className="flex items-center text-sm text-green-600">
-                  <ArrowUpRight className="h-3 w-3" />
-                  12.5%
-                </span>
-              </div>
-            </CardContent>
-          </Card>
+        {/* 關鍵指標卡片區 - 僅顯示給已登入用戶 */}
+        {user && (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+            <Card className="border-[var(--border)] bg-[var(--surface)] hover:shadow-lg transition-all duration-300 animate-fade-in" style={{ animationDelay: '0.1s' }}>
+              <CardContent className="p-6">
+                <div className="flex items-center justify-between mb-2">
+                  <p className="text-sm text-[var(--text-secondary)]">今日活躍用戶</p>
+                  <Users className="h-4 w-4 text-blue-600" />
+                </div>
+                <div className="flex items-baseline gap-2">
+                  <p className="text-2xl font-bold text-[var(--foreground)]">{todayActiveUsers.toLocaleString()}</p>
+                  <span className="flex items-center text-sm text-green-600">
+                    <ArrowUpRight className="h-3 w-3" />
+                    12.5%
+                  </span>
+                </div>
+              </CardContent>
+            </Card>
 
-          <Card className="border-[var(--border)] bg-[var(--surface)] hover:shadow-lg transition-all duration-300 animate-fade-in" style={{ animationDelay: '0.2s' }}>
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between mb-2">
-                <p className="text-sm text-[var(--text-secondary)]">今日新增文章</p>
-                <FileText className="h-4 w-4 text-green-600" />
-              </div>
-              <div className="flex items-baseline gap-2">
-                <p className="text-2xl font-bold text-[var(--foreground)]">{todayArticles.toLocaleString()}</p>
-                <span className="flex items-center text-sm text-green-600">
-                  <ArrowUpRight className="h-3 w-3" />
-                  8.3%
-                </span>
-              </div>
-            </CardContent>
-          </Card>
+            <Card className="border-[var(--border)] bg-[var(--surface)] hover:shadow-lg transition-all duration-300 animate-fade-in" style={{ animationDelay: '0.2s' }}>
+              <CardContent className="p-6">
+                <div className="flex items-center justify-between mb-2">
+                  <p className="text-sm text-[var(--text-secondary)]">今日新增文章</p>
+                  <FileText className="h-4 w-4 text-green-600" />
+                </div>
+                <div className="flex items-baseline gap-2">
+                  <p className="text-2xl font-bold text-[var(--foreground)]">{todayArticles.toLocaleString()}</p>
+                  <span className="flex items-center text-sm text-green-600">
+                    <ArrowUpRight className="h-3 w-3" />
+                    8.3%
+                  </span>
+                </div>
+              </CardContent>
+            </Card>
 
-          <Card className="border-[var(--border)] bg-[var(--surface)] hover:shadow-lg transition-all duration-300 animate-fade-in" style={{ animationDelay: '0.3s' }}>
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between mb-2">
-                <p className="text-sm text-[var(--text-secondary)]">今日金幣交易</p>
-                <DollarSign className="h-4 w-4 text-yellow-600" />
-              </div>
-              <div className="flex items-baseline gap-2">
-                <p className="text-2xl font-bold text-[var(--foreground)]">{todayTransactions.toLocaleString()}</p>
-                <span className="flex items-center text-sm text-green-600">
-                  <ArrowUpRight className="h-3 w-3" />
-                  15.2%
-                </span>
-              </div>
-            </CardContent>
-          </Card>
+            <Card className="border-[var(--border)] bg-[var(--surface)] hover:shadow-lg transition-all duration-300 animate-fade-in" style={{ animationDelay: '0.3s' }}>
+              <CardContent className="p-6">
+                <div className="flex items-center justify-between mb-2">
+                  <p className="text-sm text-[var(--text-secondary)]">今日金幣交易</p>
+                  <DollarSign className="h-4 w-4 text-yellow-600" />
+                </div>
+                <div className="flex items-baseline gap-2">
+                  <p className="text-2xl font-bold text-[var(--foreground)]">{todayTransactions.toLocaleString()}</p>
+                  <span className="flex items-center text-sm text-green-600">
+                    <ArrowUpRight className="h-3 w-3" />
+                    15.2%
+                  </span>
+                </div>
+              </CardContent>
+            </Card>
 
-          <Card className="border-[var(--border)] bg-[var(--surface)] hover:shadow-lg transition-all duration-300 animate-fade-in" style={{ animationDelay: '0.4s' }}>
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between mb-2">
-                <p className="text-sm text-[var(--text-secondary)]">系統狀態</p>
-                <Activity className="h-4 w-4 text-green-600" />
-              </div>
-              <div className="flex items-baseline gap-2">
-                <p className="text-2xl font-bold text-green-600">正常</p>
-                <span className="text-sm text-[var(--text-secondary)]">
-                  {systemUptime}% 在線率
-                </span>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
+            <Card className="border-[var(--border)] bg-[var(--surface)] hover:shadow-lg transition-all duration-300 animate-fade-in" style={{ animationDelay: '0.4s' }}>
+              <CardContent className="p-6">
+                <div className="flex items-center justify-between mb-2">
+                  <p className="text-sm text-[var(--text-secondary)]">系統狀態</p>
+                  <Activity className="h-4 w-4 text-green-600" />
+                </div>
+                <div className="flex items-baseline gap-2">
+                  <p className="text-2xl font-bold text-green-600">正常</p>
+                  <span className="text-sm text-[var(--text-secondary)]">
+                    {systemUptime}% 在線率
+                  </span>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        )}
 
         {/* 功能模組區 */}
         <div className="mb-8">
           <h2 className="text-xl font-semibold text-[var(--foreground)] mb-4">核心功能</h2>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-            {dashboardCards.map((card, index) => {
-              const Icon = card.icon;
-              return (
-                <Link key={card.href} href={card.href}>
-                  <Card
-                    className={`
-                      group relative overflow-hidden h-full
-                      border-[var(--border)] bg-[var(--surface)]
-                      hover:shadow-xl hover:-translate-y-1
-                      transition-all duration-300 cursor-pointer
-                      animate-fade-in
-                    `}
-                    style={{ animationDelay: `${0.5 + index * 0.1}s` }}
-                  >
-                    <div className={`absolute inset-0 ${card.bgColor} opacity-0 group-hover:opacity-100 transition-opacity duration-300`} />
-                    <CardHeader className="relative">
-                      <div className="flex items-start justify-between mb-3">
-                        <div className={`p-3 rounded-lg ${card.bgColor} group-hover:scale-110 transition-transform duration-300`}>
-                          <Icon className={`h-6 w-6 ${card.color}`} />
+          {user ? (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+              {dashboardCards.map((card, index) => {
+                const Icon = card.icon;
+                return (
+                  <Link key={card.href} href={card.href}>
+                    <Card
+                      className={`
+                        group relative overflow-hidden h-full
+                        border-[var(--border)] bg-[var(--surface)]
+                        hover:shadow-xl hover:-translate-y-1
+                        transition-all duration-300 cursor-pointer
+                        animate-fade-in
+                      `}
+                      style={{ animationDelay: `${0.5 + index * 0.1}s` }}
+                    >
+                      <div className={`absolute inset-0 ${card.bgColor} opacity-0 group-hover:opacity-100 transition-opacity duration-300`} />
+                      <CardHeader className="relative">
+                        <div className="flex items-start justify-between mb-3">
+                          <div className={`p-3 rounded-lg ${card.bgColor} group-hover:scale-110 transition-transform duration-300`}>
+                            <Icon className={`h-6 w-6 ${card.color}`} />
+                          </div>
+                          <ArrowUpRight className="h-4 w-4 text-[var(--text-muted)] opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
                         </div>
-                        <ArrowUpRight className="h-4 w-4 text-[var(--text-muted)] opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                        <CardTitle className="text-lg font-semibold text-[var(--foreground)] mb-2">
+                          {card.title}
+                        </CardTitle>
+                        <CardDescription className="text-sm text-[var(--text-secondary)]">
+                          {card.description}
+                        </CardDescription>
+                      </CardHeader>
+                    </Card>
+                  </Link>
+                );
+              })}
+            </div>
+          ) : (
+            <div className="text-center py-12">
+              <div className="mb-8">
+                <div className="w-20 h-20 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <User className="h-10 w-10 text-blue-600" />
+                </div>
+                <h3 className="text-xl font-semibold text-[var(--foreground)] mb-2">
+                  需要登入以存取管理功能
+                </h3>
+                <p className="text-[var(--text-secondary)] mb-6">
+                  請登入您的管理員帳戶以查看和管理 Black Swamp 平台
+                </p>
+                <Button onClick={handleLogin} size="lg" className="flex items-center gap-2 mx-auto">
+                  <LogIn className="h-5 w-5" />
+                  前往登入頁面
+                </Button>
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* 快速操作區 - 僅顯示給已登入用戶 */}
+        {user && (
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {/* 最近活動 */}
+            <Card className="border-[var(--border)] bg-[var(--surface)] animate-fade-in" style={{ animationDelay: '1.3s' }}>
+              <CardHeader>
+                <CardTitle className="text-lg font-semibold text-[var(--foreground)]">最近活動</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-3">
+                  {recentActivities.map((activity) => (
+                    <div key={activity.id} className="flex items-center justify-between py-2 border-b border-[var(--border)] last:border-0">
+                      <div className="flex items-center gap-3">
+                        <div className="w-2 h-2 bg-blue-600 rounded-full" />
+                        <p className="text-sm text-[var(--foreground)]">{activity.message}</p>
                       </div>
-                      <CardTitle className="text-lg font-semibold text-[var(--foreground)] mb-2">
-                        {card.title}
-                      </CardTitle>
-                      <CardDescription className="text-sm text-[var(--text-secondary)]">
-                        {card.description}
-                      </CardDescription>
-                    </CardHeader>
-                  </Card>
+                      <p className="text-xs text-[var(--text-muted)]">{activity.time}</p>
+                    </div>
+                  ))}
+                </div>
+                <Link href="/dashboard/activities" className="block mt-4">
+                  <button className="w-full py-2 text-sm text-blue-600 hover:text-blue-700 transition-colors">
+                    查看所有活動 →
+                  </button>
                 </Link>
-              );
-            })}
+              </CardContent>
+            </Card>
+
+            {/* 系統通知 */}
+            <Card className="border-[var(--border)] bg-[var(--surface)] animate-fade-in" style={{ animationDelay: '1.4s' }}>
+              <CardHeader>
+                <CardTitle className="text-lg font-semibold text-[var(--foreground)]">系統通知</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-3">
+                  {systemNotifications.map((notification) => {
+                    const Icon = notification.icon;
+                    const colorClass = notification.type === 'success' ? 'text-green-600' :
+                                      notification.type === 'warning' ? 'text-yellow-600' : 'text-blue-600';
+                    return (
+                      <div key={notification.id} className="flex items-center gap-3 p-3 rounded-lg bg-[var(--surface-hover)] hover:shadow-sm transition-all">
+                        <Icon className={`h-5 w-5 ${colorClass}`} />
+                        <p className="text-sm text-[var(--foreground)]">{notification.message}</p>
+                      </div>
+                    );
+                  })}
+                </div>
+                <Link href="/dashboard/notifications" className="block mt-4">
+                  <button className="w-full py-2 text-sm text-blue-600 hover:text-blue-700 transition-colors">
+                    管理通知設定 →
+                  </button>
+                </Link>
+              </CardContent>
+            </Card>
           </div>
-        </div>
-
-        {/* 快速操作區 */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {/* 最近活動 */}
-          <Card className="border-[var(--border)] bg-[var(--surface)] animate-fade-in" style={{ animationDelay: '1.3s' }}>
-            <CardHeader>
-              <CardTitle className="text-lg font-semibold text-[var(--foreground)]">最近活動</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-3">
-                {recentActivities.map((activity) => (
-                  <div key={activity.id} className="flex items-center justify-between py-2 border-b border-[var(--border)] last:border-0">
-                    <div className="flex items-center gap-3">
-                      <div className="w-2 h-2 bg-blue-600 rounded-full" />
-                      <p className="text-sm text-[var(--foreground)]">{activity.message}</p>
-                    </div>
-                    <p className="text-xs text-[var(--text-muted)]">{activity.time}</p>
-                  </div>
-                ))}
-              </div>
-              <Link href="/dashboard/activities" className="block mt-4">
-                <button className="w-full py-2 text-sm text-blue-600 hover:text-blue-700 transition-colors">
-                  查看所有活動 →
-                </button>
-              </Link>
-            </CardContent>
-          </Card>
-
-          {/* 系統通知 */}
-          <Card className="border-[var(--border)] bg-[var(--surface)] animate-fade-in" style={{ animationDelay: '1.4s' }}>
-            <CardHeader>
-              <CardTitle className="text-lg font-semibold text-[var(--foreground)]">系統通知</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-3">
-                {systemNotifications.map((notification) => {
-                  const Icon = notification.icon;
-                  const colorClass = notification.type === 'success' ? 'text-green-600' :
-                                    notification.type === 'warning' ? 'text-yellow-600' : 'text-blue-600';
-                  return (
-                    <div key={notification.id} className="flex items-center gap-3 p-3 rounded-lg bg-[var(--surface-hover)] hover:shadow-sm transition-all">
-                      <Icon className={`h-5 w-5 ${colorClass}`} />
-                      <p className="text-sm text-[var(--foreground)]">{notification.message}</p>
-                    </div>
-                  );
-                })}
-              </div>
-              <Link href="/dashboard/notifications" className="block mt-4">
-                <button className="w-full py-2 text-sm text-blue-600 hover:text-blue-700 transition-colors">
-                  管理通知設定 →
-                </button>
-              </Link>
-            </CardContent>
-          </Card>
-        </div>
+        )}
       </div>
     </div>
   );
