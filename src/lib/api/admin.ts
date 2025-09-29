@@ -1,6 +1,7 @@
 // Admin API Client
 // 管理API客戶端
 
+import { config, logger } from '@/config/environment';
 import { authService } from '../auth/auth-service';
 import {
   DashboardStats,
@@ -32,7 +33,7 @@ import {
   UserTransactionsResponse
 } from '@/types/admin';
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+const API_BASE_URL = config.apiUrl;
 
 class AdminApiClient {
   private async makeRequest<T>(
@@ -41,11 +42,12 @@ class AdminApiClient {
   ): Promise<T> {
     const authHeader = authService.getAuthHeader();
     if (!authHeader) {
+      logger.warn('Admin API request attempted without authentication');
       throw new Error('管理員未登入');
     }
 
     const url = `${API_BASE_URL}/api/v1/admin${endpoint}`;
-    const config: RequestInit = {
+    const requestConfig: RequestInit = {
       headers: {
         'Content-Type': 'application/json',
         'Authorization': authHeader,
@@ -54,8 +56,10 @@ class AdminApiClient {
       ...options,
     };
 
+    logger.debug('Making API request:', { url, method: options.method || 'GET' });
+
     try {
-      const response = await fetch(url, config);
+      const response = await fetch(url, requestConfig);
       
       if (!response.ok) {
         let errorMessage = `HTTP ${response.status}`;
@@ -93,16 +97,20 @@ class AdminApiClient {
         const error = new Error(errorMessage) as Error & { type?: string; status?: number };
         error.type = errorType;
         error.status = response.status;
+        logger.error('API request failed:', { url, status: response.status, errorMessage, errorType });
         throw error;
       }
 
+      logger.debug('API request successful:', { url, status: response.status });
       return await response.json();
     } catch (err) {
       if (err instanceof Error) {
+        logger.error('API request error:', { url, error: err.message });
         throw err;
       }
       const unknownError = new Error('API請求失敗') as Error & { type?: string };
       unknownError.type = 'network_error';
+      logger.error('Unknown API error:', { url, error: unknownError.message });
       throw unknownError;
     }
   }

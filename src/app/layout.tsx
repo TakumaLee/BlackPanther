@@ -2,6 +2,8 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { AuthProvider } from "@/lib/auth/auth-context";
+import { EnvironmentIndicator, EnvironmentBanner, DevelopmentTools } from "@/components/ui/environment-indicator";
+import { config } from "@/config/environment";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -14,7 +16,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Black Swamp Admin Dashboard",
+  title: `${config.app.name}${config.isProduction ? '' : ` (${config.env.toUpperCase()})`}`,
   description: "管理儀表板用於審核邀請系統",
 };
 
@@ -29,7 +31,10 @@ export default function RootLayout({
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
         <AuthProvider>
+          <EnvironmentBanner />
           {children}
+          <EnvironmentIndicator />
+          <DevelopmentTools />
         </AuthProvider>
       </body>
     </html>

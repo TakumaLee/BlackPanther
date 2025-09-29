@@ -4,9 +4,22 @@
   "private": true,
   "scripts": {
     "dev": "next dev --turbopack",
+    "dev:qa": "cp .env.qa .env.local && next dev --turbopack",
+    "dev:prod": "cp .env.production .env.local && next dev --turbopack",
     "build": "next build --turbopack",
+    "build:dev": "cp .env.development .env.local && next build --turbopack",
+    "build:qa": "cp .env.qa .env.local && next build --turbopack",
+    "build:prod": "cp .env.production .env.local && next build --turbopack",
     "start": "next start",
-    "lint": "eslint"
+    "start:dev": "cp .env.development .env.local && next start",
+    "start:qa": "cp .env.qa .env.local && next start",
+    "start:prod": "cp .env.production .env.local && next start",
+    "lint": "eslint",
+    "clean": "rm -rf .next node_modules/.cache",
+    "env:dev": "cp .env.development .env.local && echo 'Switched to development environment'",
+    "env:qa": "cp .env.qa .env.local && echo 'Switched to QA environment'",
+    "env:prod": "cp .env.production .env.local && echo 'Switched to production environment'",
+    "env:check": "node -e \"console.log('Current environment:', process.env.NEXT_PUBLIC_APP_ENV || 'Not set')\""
   },
   "dependencies": {
     "@radix-ui/react-dialog": "^1.1.15",
