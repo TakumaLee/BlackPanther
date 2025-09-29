@@ -13,7 +13,7 @@ import { Loader2, LogIn, AlertCircle } from 'lucide-react';
 export default function LoginPage() {
   const router = useRouter();
   const { login } = useAuth();
-  const [username, setUsername] = useState('');
+  const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -25,13 +25,13 @@ export default function LoginPage() {
 
     try {
       // 使用 auth context 的 login 方法
-      await login(username, password);
+      await login({ email, password });
 
       // 登入成功後導航到 dashboard
       router.push('/dashboard');
     } catch (err) {
       console.error('Login failed:', err);
-      setError(err instanceof Error ? err.message : '登入失敗，請檢查用戶名和密碼');
+      setError(err instanceof Error ? err.message : '登入失敗，請檢查電子郵件和密碼');
     } finally {
       setLoading(false);
     }
@@ -39,7 +39,7 @@ export default function LoginPage() {
 
   // 測試用的自動填入功能（開發環境）
   const fillTestCredentials = () => {
-    setUsername('admin');
+    setEmail('admin@blackswamp.com');
     setPassword('admin123');
   };
 
@@ -63,13 +63,13 @@ export default function LoginPage() {
               )}
 
               <div className="space-y-2">
-                <Label htmlFor="username">用戶名</Label>
+                <Label htmlFor="email">電子郵件</Label>
                 <Input
-                  id="username"
-                  type="text"
-                  placeholder="輸入管理員用戶名"
-                  value={username}
-                  onChange={(e) => setUsername(e.target.value)}
+                  id="email"
+                  type="email"
+                  placeholder="輸入管理員電子郵件"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
                   disabled={loading}
                   required
                 />
@@ -91,7 +91,7 @@ export default function LoginPage() {
               <Button
                 type="submit"
                 className="w-full"
-                disabled={loading || !username || !password}
+                disabled={loading || !email || !password}
               >
                 {loading ? (
                   <>
@@ -118,7 +118,7 @@ export default function LoginPage() {
                     className="w-full"
                     onClick={fillTestCredentials}
                   >
-                    使用測試帳號 (admin/admin123)
+                    使用測試帳號 (admin@blackswamp.com)
                   </Button>
                 </div>
               )}
