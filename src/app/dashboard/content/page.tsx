@@ -108,7 +108,7 @@ export default function ContentPage() {
         comments_count: 0, // Comments are deprecated
         reports_count: 0, // TODO: Add reports count when available
         ai_analysis: article.analysis ? {
-          sentiment: ((article.analysis as Record<string, unknown>).sentiment_category as string) || 'neutral',
+          sentiment: (((article.analysis as Record<string, unknown>).sentiment_category as string) || 'neutral') as 'positive' | 'negative' | 'neutral',
           risk_score: parseFloat(((article.analysis as Record<string, unknown>).confidence_score as string) || '0') || 0,
           keywords: (article.analysis as Record<string, unknown>).detected_emotions ?
             ((article.analysis as Record<string, unknown>).detected_emotions as string).split(',').map((e: string) => e.trim()) : []

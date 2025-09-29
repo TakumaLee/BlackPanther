@@ -58,8 +58,9 @@ export default function EconomyPage() {
       setLoading(true);
       setError(null);
       const data = await adminApi.getEconomyConfig();
-      setConfig(data.config);
-      setEditedConfig(data.config);
+      const configData = data as { config: EconomyConfig };
+      setConfig(configData.config);
+      setEditedConfig(configData.config);
     } catch (err) {
       console.error('Failed to load economy config:', err);
       setError(err instanceof Error ? err.message : '載入配置失敗');
@@ -74,8 +75,10 @@ export default function EconomyPage() {
 
     try {
       setSaving(true);
-      const data = await adminApi.updateEconomyConfig(editedConfig);
-      setConfig(data.config);
+      const data = await adminApi.updateEconomyConfig(editedConfig as unknown as Record<string, unknown>);
+      if (data.config) {
+        setConfig(data.config as unknown as EconomyConfig);
+      }
       setMessage({ type: 'success', text: data.message || '配置已更新成功' });
       setTimeout(() => setMessage(null), 3000);
     } catch (err) {
