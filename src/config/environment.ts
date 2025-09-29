@@ -20,8 +20,8 @@ export interface EnvironmentConfig {
   // API configuration
   apiUrl: string;
 
-  // Supabase configuration
-  supabase: {
+  // Supabase configuration (optional - not used in this dashboard)
+  supabase?: {
     url: string;
     anonKey: string;
     serviceRoleKey?: string; // Only available server-side
@@ -83,9 +83,7 @@ function stringToBoolean(value: string | undefined, defaultValue: boolean = fals
  */
 function validateRequiredEnvVars() {
   const required = [
-    'NEXT_PUBLIC_API_URL',
-    'NEXT_PUBLIC_SUPABASE_URL',
-    'NEXT_PUBLIC_SUPABASE_ANON_KEY'
+    'NEXT_PUBLIC_API_URL'
   ];
 
   const missing = required.filter(key => !process.env[key]);
@@ -115,12 +113,14 @@ function createEnvironmentConfig(): EnvironmentConfig {
     // API configuration
     apiUrl: process.env.NEXT_PUBLIC_API_URL!,
 
-    // Supabase configuration
-    supabase: {
-      url: process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      anonKey: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-      serviceRoleKey: process.env.SUPABASE_SERVICE_ROLE_KEY, // Only on server
-    },
+    // Supabase configuration (optional - only if variables are provided)
+    ...(process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ? {
+      supabase: {
+        url: process.env.NEXT_PUBLIC_SUPABASE_URL,
+        anonKey: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
+        serviceRoleKey: process.env.SUPABASE_SERVICE_ROLE_KEY, // Only on server
+      }
+    } : {}),
 
     // Application configuration
     app: {
