@@ -82,15 +82,11 @@ function stringToBoolean(value: string | undefined, defaultValue: boolean = fals
  * Validate required environment variables
  */
 function validateRequiredEnvVars() {
-  const required = [
-    'NEXT_PUBLIC_API_URL'
-  ];
-
-  const missing = required.filter(key => !process.env[key]);
-
-  if (missing.length > 0) {
-    console.error('Missing required environment variables:', missing);
-    throw new Error(`Missing required environment variables: ${missing.join(', ')}`);
+  // Check if API URL is provided
+  if (!process.env.NEXT_PUBLIC_API_URL) {
+    console.warn('NEXT_PUBLIC_API_URL not set, using default QA environment');
+    console.warn('Available env vars:', Object.keys(process.env).filter(k => k.startsWith('NEXT_PUBLIC_')));
+    // Don't throw error since we have a fallback
   }
 }
 
@@ -110,8 +106,8 @@ function createEnvironmentConfig(): EnvironmentConfig {
     isQA: env === 'qa',
     isProduction: env === 'production',
 
-    // API configuration
-    apiUrl: process.env.NEXT_PUBLIC_API_URL!,
+    // API configuration - fallback to QA if not set
+    apiUrl: process.env.NEXT_PUBLIC_API_URL || 'https://black-alligator-qa-646040465533.asia-east1.run.app',
 
     // Supabase configuration (optional - only if variables are provided)
     ...(process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ? {
