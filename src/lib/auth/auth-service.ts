@@ -67,7 +67,8 @@ class AuthService {
    */
   async login(credentials: LoginRequest): Promise<AdminUser> {
     try {
-      const response = await fetch(`${API_BASE_URL}/api/v1/admin/auth/login`, {
+      // Use Next.js API route instead of direct backend call
+      const response = await fetch('/api/auth/login', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

@@ -7,7 +7,7 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
 
     // Forward the login request to the backend
-    const response = await fetch(`${API_BASE_URL}/api/v1/admin/login`, {
+    const response = await fetch(`${API_BASE_URL}/api/v1/admin/auth/login`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

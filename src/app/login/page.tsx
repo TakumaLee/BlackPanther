@@ -40,7 +40,7 @@ export default function LoginPage() {
   // 測試用的自動填入功能（開發環境）
   const fillTestCredentials = () => {
     setEmail('admin@blackswamp.com');
-    setPassword('admin123');
+    setPassword('Admin@123456');
   };
 
   return (
