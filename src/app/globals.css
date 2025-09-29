@@ -1,8 +1,37 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  /* 基礎色彩 - 柔和的專業配色 */
+  --background: #F7F8FA;
+  --surface: #FFFFFF;
+  --surface-hover: #F9FAFB;
+  --border: #E5E7EB;
+
+  /* 文字色彩 */
+  --foreground: #1F2937;
+  --text-secondary: #6B7280;
+  --text-muted: #9CA3AF;
+
+  /* 品牌色彩 - 沼澤主題 */
+  --brand-primary: #065F46;
+  --brand-secondary: #10B981;
+  --brand-accent: #34D399;
+
+  /* 功能色彩 */
+  --success: #10B981;
+  --warning: #F59E0B;
+  --error: #EF4444;
+  --info: #3B82F6;
+
+  /* 功能卡片配色 */
+  --economy: #F59E0B;
+  --users: #3B82F6;
+  --content: #10B981;
+  --analytics: #8B5CF6;
+  --invites: #EC4899;
+  --monitoring: #EF4444;
+  --ai: #6366F1;
+  --settings: #6B7280;
 }
 
 @theme inline {
@@ -12,15 +41,60 @@
   --font-mono: var(--font-geist-mono);
 }
 
+/* 深色模式 - 護眼配色 */
 @media (prefers-color-scheme: dark) {
   :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+    --background: #1A1F2E;
+    --surface: #243041;
+    --surface-hover: #2D3748;
+    --border: #374151;
+    --foreground: #F3F4F6;
+    --text-secondary: #D1D5DB;
+    --text-muted: #9CA3AF;
+
+    /* 品牌色彩深色調整 */
+    --brand-primary: #10B981;
+    --brand-secondary: #34D399;
+    --brand-accent: #6EE7B7;
   }
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-geist-sans), system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  min-height: 100vh;
+  transition: background-color 0.3s ease;
+}
+
+/* 全局動畫 */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes slideInRight {
+  from { transform: translateX(100%); }
+  to { transform: translateX(0); }
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+/* 工具類 */
+.animate-fade-in {
+  animation: fadeIn 0.3s ease-out;
+}
+
+.glass-effect {
+  background: rgba(255, 255, 255, 0.7);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+}
+
+@media (prefers-color-scheme: dark) {
+  .glass-effect {
+    background: rgba(36, 48, 65, 0.7);
+  }
 }
