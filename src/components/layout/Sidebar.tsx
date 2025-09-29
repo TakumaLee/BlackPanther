@@ -3,14 +3,20 @@
 import { useState } from 'react'
 import { usePathname } from 'next/navigation'
 import Link from 'next/link'
-import { 
-  BarChart3, 
-  Home, 
-  Shield, 
+import {
+  BarChart3,
+  Home,
+  Shield,
   Users,
   Clock,
   ChevronDown,
-  ChevronRight
+  ChevronRight,
+  DollarSign,
+  FileText,
+  Settings,
+  UserPlus,
+  Activity,
+  TrendingUp
 } from 'lucide-react'
 
 interface SidebarProps {
@@ -35,6 +41,12 @@ const navigation: NavigationItem[] = [
     name: '儀表板',
     href: '/dashboard',
     icon: Home,
+    current: false,
+  },
+  {
+    name: '經濟系統',
+    href: '/dashboard/economy',
+    icon: DollarSign,
     current: false,
   },
   {
@@ -69,6 +81,18 @@ const navigation: NavigationItem[] = [
     current: false,
   },
   {
+    name: '內容管理',
+    href: '/dashboard/content',
+    icon: FileText,
+    current: false,
+  },
+  {
+    name: '邀請系統',
+    href: '/dashboard/invites',
+    icon: UserPlus,
+    current: false,
+  },
+  {
     name: '封鎖管理',
     href: '/dashboard/blocks',
     icon: Shield,
@@ -78,6 +102,30 @@ const navigation: NavigationItem[] = [
     name: '統計報告',
     href: '/dashboard/stats',
     icon: BarChart3,
+    current: false,
+  },
+  {
+    name: '數據分析',
+    href: '/dashboard/analytics',
+    icon: BarChart3,
+    current: false,
+  },
+  {
+    name: '系統監控',
+    href: '/dashboard/monitoring',
+    icon: Activity,
+    current: false,
+  },
+  {
+    name: 'AI 配置',
+    href: '/dashboard/ai-config',
+    icon: TrendingUp,
+    current: false,
+  },
+  {
+    name: '系統設定',
+    href: '/dashboard/settings',
+    icon: Settings,
     current: false,
   },
 ]
