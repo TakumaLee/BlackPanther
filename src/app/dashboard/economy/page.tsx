@@ -1,6 +1,8 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { adminApi } from '@/lib/api/admin';
+import { useAuth } from '@/lib/auth/auth-context';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -8,7 +10,6 @@ import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Loader2, Save, RotateCcw, TrendingUp, Gift, Star } from 'lucide-react';
-import { getEconomyConfig, updateEconomyConfig, resetEconomyConfig } from '@/lib/api/economy';
 
 interface EconomyConfig {
   ai_analysis_pricing: Record<string, {
@@ -38,23 +39,30 @@ interface EconomyConfig {
 }
 
 export default function EconomyPage() {
+  const { user: currentUser } = useAuth();
   const [config, setConfig] = useState<EconomyConfig | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
   const [editedConfig, setEditedConfig] = useState<EconomyConfig | null>(null);
 
   useEffect(() => {
-    loadConfig();
-  }, []);
+    if (currentUser) {
+      loadConfig();
+    }
+  }, [currentUser]);
 
   const loadConfig = async () => {
     try {
       setLoading(true);
-      const data = await getEconomyConfig();
+      setError(null);
+      const data = await adminApi.getEconomyConfig();
       setConfig(data.config);
       setEditedConfig(data.config);
-    } catch {
+    } catch (err) {
+      console.error('Failed to load economy config:', err);
+      setError(err instanceof Error ? err.message : '載入配置失敗');
       setMessage({ type: 'error', text: '載入配置失敗' });
     } finally {
       setLoading(false);
@@ -66,12 +74,13 @@ export default function EconomyPage() {
 
     try {
       setSaving(true);
-      await updateEconomyConfig(editedConfig);
-      setConfig(editedConfig);
-      setMessage({ type: 'success', text: '配置已更新成功' });
+      const data = await adminApi.updateEconomyConfig(editedConfig);
+      setConfig(data.config);
+      setMessage({ type: 'success', text: data.message || '配置已更新成功' });
       setTimeout(() => setMessage(null), 3000);
-    } catch {
-      setMessage({ type: 'error', text: '更新配置失敗' });
+    } catch (err) {
+      console.error('Failed to update economy config:', err);
+      setMessage({ type: 'error', text: err instanceof Error ? err.message : '更新配置失敗' });
     } finally {
       setSaving(false);
     }
@@ -82,12 +91,13 @@ export default function EconomyPage() {
 
     try {
       setSaving(true);
-      const data = await resetEconomyConfig();
+      const data = await adminApi.resetEconomyConfig();
       setConfig(data.config);
       setEditedConfig(data.config);
-      setMessage({ type: 'success', text: '已重設為預設值' });
-    } catch {
-      setMessage({ type: 'error', text: '重設失敗' });
+      setMessage({ type: 'success', text: data.message || '已重設為預設值' });
+    } catch (err) {
+      console.error('Failed to reset economy config:', err);
+      setMessage({ type: 'error', text: err instanceof Error ? err.message : '重設失敗' });
     } finally {
       setSaving(false);
     }
@@ -147,7 +157,29 @@ export default function EconomyPage() {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-96">
-        <Loader2 className="h-8 w-8 animate-spin" />
+        <div className="text-center">
+          <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4" />
+          <p className="text-gray-600">載入經濟系統配置中...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error && !config) {
+    return (
+      <div className="flex items-center justify-center h-96">
+        <div className="text-center">
+          <div className="text-red-600 mb-4">
+            <svg className="h-12 w-12 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+            </svg>
+          </div>
+          <h2 className="text-lg font-medium text-gray-900 mb-2">載入失敗</h2>
+          <p className="text-gray-500 mb-4">{error}</p>
+          <Button onClick={loadConfig} disabled={loading}>
+            重試
+          </Button>
+        </div>
       </div>
     );
   }

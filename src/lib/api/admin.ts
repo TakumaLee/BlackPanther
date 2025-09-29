@@ -372,6 +372,116 @@ class AdminApiClient {
   async getReviewStatistics(): Promise<ReviewStatistics> {
     return this.makeRequest('/reviews/statistics');
   }
+
+  // Content Management APIs (using general article API for now)
+  async getArticles(filters: {
+    page?: number;
+    limit?: number;
+    sort?: 'latest' | 'popular';
+    filter?: 'active' | 'all';
+    search?: string;
+  } = {}): Promise<{
+    articles: any[];
+    total: number;
+    page: number;
+    limit: number;
+    has_next: boolean;
+  }> {
+    const params = new URLSearchParams();
+
+    if (filters.page) params.append('page', filters.page.toString());
+    if (filters.limit) params.append('limit', filters.limit.toString());
+    if (filters.sort) params.append('sort', filters.sort);
+    if (filters.filter) params.append('filter', filters.filter);
+
+    const query = params.toString();
+    const url = `${API_BASE_URL}/api/v1/articles${query ? `?${query}` : ''}`;
+
+    try {
+      const response = await fetch(url, {
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': authService.getAuthHeader() || '',
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}`);
+      }
+
+      const data = await response.json();
+      return {
+        articles: data.articles || [],
+        total: data.total || 0,
+        page: data.page || 1,
+        limit: data.limit || 20,
+        has_next: data.has_next || false
+      };
+    } catch (error) {
+      console.warn('Articles API failed, returning fallback data:', error);
+      return {
+        articles: [],
+        total: 0,
+        page: filters.page || 1,
+        limit: filters.limit || 20,
+        has_next: false
+      };
+    }
+  }
+
+  async getArticleDetail(articleId: string): Promise<any> {
+    const url = `${API_BASE_URL}/api/v1/articles/${articleId}`;
+
+    try {
+      const response = await fetch(url, {
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': authService.getAuthHeader() || '',
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}`);
+      }
+
+      return await response.json();
+    } catch (error) {
+      throw new Error('Failed to fetch article detail');
+    }
+  }
+
+  // Placeholder methods for admin-only content operations (to be implemented in backend)
+  async deleteArticleAsAdmin(articleId: string, reason: string): Promise<{ message: string }> {
+    // TODO: Implement proper admin delete endpoint in backend
+    throw new Error('Admin article deletion endpoint not implemented yet');
+  }
+
+  async moderateArticle(articleId: string, action: 'approve' | 'reject', reason: string): Promise<{ message: string }> {
+    // TODO: Implement article moderation endpoint in backend
+    throw new Error('Article moderation endpoint not implemented yet');
+  }
+
+  // Economy Configuration APIs
+  async getEconomyConfig(): Promise<any> {
+    return this.makeRequest('/economy/config');
+  }
+
+  async updateEconomyConfig(config: any): Promise<{ success: boolean; config: any; message: string }> {
+    return this.makeRequest('/economy/config', {
+      method: 'PUT',
+      body: JSON.stringify(config),
+    });
+  }
+
+  async resetEconomyConfig(): Promise<{ success: boolean; config: any; message: string }> {
+    return this.makeRequest('/economy/config/reset', {
+      method: 'POST',
+    });
+  }
+
+  async previewPricingChanges(model: string, newPrice: number): Promise<any> {
+    return this.makeRequest(`/economy/pricing-preview?model=${model}&new_price=${newPrice}`);
+  }
 }
 
 // Export singleton instance

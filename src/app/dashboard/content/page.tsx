@@ -1,6 +1,8 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { adminApi } from '@/lib/api/admin';
+import { useAuth } from '@/lib/auth/auth-context';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -53,8 +55,11 @@ interface ContentFilters {
 }
 
 export default function ContentPage() {
+  const { user: currentUser } = useAuth();
   const [articles, setArticles] = useState<Article[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [total, setTotal] = useState(0);
   const [filters, setFilters] = useState<ContentFilters>({
     search: '',
     status: '',
@@ -65,72 +70,80 @@ export default function ContentPage() {
   const [selectedArticle, setSelectedArticle] = useState<Article | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
+  const [hasNext, setHasNext] = useState(false);
 
-  // 模擬數據
+  // 載入文章數據
   useEffect(() => {
-    const mockArticles: Article[] = [
-      {
-        id: '1',
-        title: '今天心情很沮喪...',
-        content: '工作壓力很大，感覺快要撐不下去了。希望能有人理解我的感受。',
-        author_id: 'user1',
-        author_name: '匿名用戶#1234',
-        created_at: '2024-01-15T10:30:00Z',
-        updated_at: '2024-01-15T10:30:00Z',
-        status: 'active',
-        reactions_count: 15,
-        comments_count: 8,
-        reports_count: 0,
-        ai_analysis: {
-          sentiment: 'negative',
-          risk_score: 0.3,
-          keywords: ['工作壓力', '沮喪', '支持']
-        }
-      },
-      {
-        id: '2',
-        title: '分享一些正面能量',
-        content: '雖然生活有困難，但我們要保持希望。分享一些讓我開心的事情...',
-        author_id: 'user2',
-        author_name: '匿名用戶#5678',
-        created_at: '2024-01-14T15:20:00Z',
-        updated_at: '2024-01-14T15:20:00Z',
-        status: 'active',
-        reactions_count: 42,
-        comments_count: 23,
-        reports_count: 0,
-        ai_analysis: {
-          sentiment: 'positive',
-          risk_score: 0.1,
-          keywords: ['正面', '希望', '分享']
-        }
-      },
-      {
-        id: '3',
-        title: '疑似不當內容...',
-        content: '這裡包含一些可能不適當的內容...',
-        author_id: 'user3',
-        author_name: '匿名用戶#9999',
-        created_at: '2024-01-13T09:15:00Z',
-        updated_at: '2024-01-13T09:15:00Z',
-        status: 'reported',
-        reactions_count: 3,
-        comments_count: 1,
-        reports_count: 5,
-        ai_analysis: {
-          sentiment: 'negative',
-          risk_score: 0.8,
-          keywords: ['不當', '檢舉', '風險']
-        }
-      }
-    ];
+    fetchArticles();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [filters, currentPage]);
 
-    setTimeout(() => {
-      setArticles(mockArticles);
+  const fetchArticles = async () => {
+    if (!currentUser) return;
+
+    setLoading(true);
+    setError(null);
+
+    try {
+      const response = await adminApi.getArticles({
+        page: currentPage,
+        limit: 10,
+        sort: 'latest',
+        filter: filters.status || 'all',
+        search: filters.search || undefined
+      });
+
+      // 將 API 回應轉換為頁面需要的格式
+      const transformedArticles: Article[] = response.articles.map((article: any) => ({
+        id: article.id,
+        title: article.title || '無標題',
+        content: article.content || '',
+        author_id: article.user_id,
+        author_name: `匿名用戶#${article.user_id?.slice(-4) || '0000'}`,
+        created_at: article.created_at,
+        updated_at: article.updated_at || article.created_at,
+        status: article.is_active === false ? 'deleted' :
+                article.expires_at && new Date(article.expires_at) < new Date() ? 'expired' : 'active',
+        reactions_count: article.reactions_count || 0,
+        comments_count: 0, // Comments are deprecated
+        reports_count: 0, // TODO: Add reports count when available
+        ai_analysis: article.analysis ? {
+          sentiment: article.analysis.sentiment_category || 'neutral',
+          risk_score: parseFloat(article.analysis.confidence_score) || 0,
+          keywords: article.analysis.detected_emotions ?
+            article.analysis.detected_emotions.split(',').map((e: string) => e.trim()) : []
+        } : undefined
+      }));
+
+      setArticles(transformedArticles);
+      setTotal(response.total);
+      setHasNext(response.has_next);
+      setTotalPages(Math.ceil(response.total / 10));
+    } catch (err) {
+      console.error('Failed to fetch articles:', err);
+      setError(err instanceof Error ? err.message : '載入文章失敗');
+
+      // 如果 API 失敗，顯示一些示例數據以便測試 UI
+      setArticles([
+        {
+          id: 'sample-1',
+          title: '示例文章 - API 連接中',
+          content: '這是一個示例文章，用於展示介面功能。實際數據正在載入中...',
+          author_id: 'sample-user',
+          author_name: '示例用戶',
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+          status: 'active',
+          reactions_count: 0,
+          comments_count: 0,
+          reports_count: 0
+        }
+      ]);
+      setTotal(1);
+    } finally {
       setLoading(false);
-      setTotalPages(3);
-    }, 1000);
-  }, [filters]);
+    }
+  };
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -164,19 +177,42 @@ export default function ContentPage() {
     return '低風險';
   };
 
+  const handleSearchChange = (searchTerm: string) => {
+    setFilters(prev => ({ ...prev, search: searchTerm }));
+    setCurrentPage(1);
+  };
+
+  const handleFilterChange = (key: keyof ContentFilters, value: string) => {
+    setFilters(prev => ({ ...prev, [key]: value }));
+    setCurrentPage(1);
+  };
+
+  const handlePageChange = (page: number) => {
+    setCurrentPage(page);
+  };
+
   const handleDeleteArticle = async (articleId: string) => {
     if (!confirm('確定要刪除這篇文章嗎？')) return;
-    // 實際應該調用 API
-    setArticles(prev => prev.filter(article => article.id !== articleId));
+
+    try {
+      // TODO: 使用 admin 專用的刪除 API
+      await adminApi.deleteArticleAsAdmin(articleId, '管理員刪除');
+      fetchArticles(); // 重新載入數據
+    } catch (err) {
+      console.error('Delete failed:', err);
+      alert('刪除失敗：' + (err instanceof Error ? err.message : '未知錯誤'));
+    }
   };
 
   const handleApproveArticle = async (articleId: string) => {
-    // 實際應該調用 API
-    setArticles(prev => prev.map(article =>
-      article.id === articleId
-        ? { ...article, status: 'active' as const, reports_count: 0 }
-        : article
-    ));
+    try {
+      // TODO: 使用文章審核 API
+      await adminApi.moderateArticle(articleId, 'approve', '管理員通過審核');
+      fetchArticles(); // 重新載入數據
+    } catch (err) {
+      console.error('Approve failed:', err);
+      alert('審核通過失敗：' + (err instanceof Error ? err.message : '未知錯誤'));
+    }
   };
 
   const formatDate = (dateString: string) => {
@@ -200,8 +236,13 @@ export default function ContentPage() {
         </div>
         <div className="flex items-center gap-4">
           <div className="text-sm text-[var(--text-secondary)]">
-            共 {articles.length} 篇文章
+            共 {total.toLocaleString()} 篇文章
           </div>
+          {error && (
+            <div className="text-sm text-red-600">
+              API 連接異常
+            </div>
+          )}
         </div>
       </div>
 
@@ -280,7 +321,7 @@ export default function ContentPage() {
                   id="search"
                   placeholder="標題或內容"
                   value={filters.search}
-                  onChange={(e) => setFilters(prev => ({ ...prev, search: e.target.value }))}
+                  onChange={(e) => handleSearchChange(e.target.value)}
                   className="pl-10"
                 />
               </div>
@@ -292,7 +333,7 @@ export default function ContentPage() {
                 id="status"
                 className="mt-1 block w-full px-3 py-2 border border-[var(--border)] rounded-md shadow-sm bg-[var(--surface)] text-[var(--foreground)]"
                 value={filters.status}
-                onChange={(e) => setFilters(prev => ({ ...prev, status: e.target.value }))}
+                onChange={(e) => handleFilterChange('status', e.target.value)}
               >
                 <option value="">全部狀態</option>
                 <option value="active">正常</option>
@@ -308,7 +349,7 @@ export default function ContentPage() {
                 id="risk_level"
                 className="mt-1 block w-full px-3 py-2 border border-[var(--border)] rounded-md shadow-sm bg-[var(--surface)] text-[var(--foreground)]"
                 value={filters.risk_level}
-                onChange={(e) => setFilters(prev => ({ ...prev, risk_level: e.target.value }))}
+                onChange={(e) => handleFilterChange('risk_level', e.target.value)}
               >
                 <option value="">全部等級</option>
                 <option value="low">低風險</option>
@@ -323,7 +364,7 @@ export default function ContentPage() {
                 id="date_from"
                 type="date"
                 value={filters.date_from}
-                onChange={(e) => setFilters(prev => ({ ...prev, date_from: e.target.value }))}
+                onChange={(e) => handleFilterChange('date_from', e.target.value)}
                 className="mt-1"
               />
             </div>
@@ -334,7 +375,7 @@ export default function ContentPage() {
                 id="date_to"
                 type="date"
                 value={filters.date_to}
-                onChange={(e) => setFilters(prev => ({ ...prev, date_to: e.target.value }))}
+                onChange={(e) => handleFilterChange('date_to', e.target.value)}
                 className="mt-1"
               />
             </div>
@@ -427,37 +468,39 @@ export default function ContentPage() {
       </div>
 
       {/* 分頁 */}
-      <div className="flex items-center justify-between">
-        <div className="text-sm text-[var(--text-secondary)]">
-          顯示第 {(currentPage - 1) * 10 + 1} - {Math.min(currentPage * 10, articles.length)} 項，共 {articles.length} 項
+      {total > 10 && (
+        <div className="flex items-center justify-between">
+          <div className="text-sm text-[var(--text-secondary)]">
+            顯示第 {(currentPage - 1) * 10 + 1} - {Math.min(currentPage * 10, total)} 項，共 {total.toLocaleString()} 項
+          </div>
+
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => handlePageChange(currentPage - 1)}
+              disabled={currentPage === 1 || loading}
+            >
+              <ChevronLeft className="h-4 w-4" />
+              上一頁
+            </Button>
+
+            <span className="text-sm text-[var(--text-secondary)]">
+              第 {currentPage} / {totalPages} 頁
+            </span>
+
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => handlePageChange(currentPage + 1)}
+              disabled={!hasNext || loading}
+            >
+              下一頁
+              <ChevronRight className="h-4 w-4" />
+            </Button>
+          </div>
         </div>
-
-        <div className="flex items-center gap-2">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
-            disabled={currentPage === 1}
-          >
-            <ChevronLeft className="h-4 w-4" />
-            上一頁
-          </Button>
-
-          <span className="text-sm text-[var(--text-secondary)]">
-            第 {currentPage} / {totalPages} 頁
-          </span>
-
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
-            disabled={currentPage === totalPages}
-          >
-            下一頁
-            <ChevronRight className="h-4 w-4" />
-          </Button>
-        </div>
-      </div>
+      )}
 
       {/* 文章詳情模態 */}
       {selectedArticle && (
