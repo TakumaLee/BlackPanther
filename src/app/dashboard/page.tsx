@@ -5,18 +5,25 @@ import { adminApi } from '@/lib/api/admin'
 import { DashboardStats } from '@/types/admin'
 import { useAuth } from '@/lib/auth/auth-context'
 import Link from 'next/link'
-import { 
-  Clock, 
-  XCircle, 
-  Users, 
-  TrendingUp, 
+import {
+  Clock,
+  XCircle,
+  Users,
+  TrendingUp,
   AlertTriangle,
   Eye,
   Activity,
   FileText,
   Shield,
-  DollarSign
+  DollarSign,
+  Settings,
+  BarChart3,
+  UserCheck,
+  Monitor,
+  Bot,
+  Coins
 } from 'lucide-react'
+import { FeatureCard } from '@/components/dashboard/FeatureCard'
 
 interface StatCardProps {
   title: string
@@ -228,6 +235,75 @@ export default function DashboardPage() {
                 subtitle="詐騙評分 ≥ 0.7"
                 changeType="negative"
               />
+            </div>
+
+            {/* 核心功能導航 */}
+            <div className="mb-8">
+              <h3 className="text-lg font-medium text-gray-900 mb-6">
+                核心功能
+              </h3>
+              <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
+                <FeatureCard
+                  title="經濟系統配置"
+                  description="管理金幣經濟、IAP產品和定價策略"
+                  icon={Coins}
+                  href="/dashboard/economy"
+                  color="orange"
+                  stats={stats ? `$${stats.total_iap_revenue.toLocaleString()} 總收入` : undefined}
+                />
+                <FeatureCard
+                  title="用戶管理"
+                  description="查看和管理用戶帳戶、封鎖狀態"
+                  icon={Users}
+                  href="/dashboard/users"
+                  color="blue"
+                  stats={stats ? `${stats.total_users.toLocaleString()} 總用戶` : undefined}
+                />
+                <FeatureCard
+                  title="內容管理"
+                  description="監控和管理平台上的文章內容"
+                  icon={FileText}
+                  href="/dashboard/content"
+                  color="green"
+                  stats={stats ? `${stats.total_articles.toLocaleString()} 總文章` : undefined}
+                />
+                <FeatureCard
+                  title="數據分析"
+                  description="查看詳細的用戶行為和業務分析"
+                  icon={BarChart3}
+                  href="/dashboard/analytics"
+                  color="purple"
+                />
+                <FeatureCard
+                  title="邀請系統"
+                  description="管理邀請請求和審核流程"
+                  icon={UserCheck}
+                  href="/dashboard/invites"
+                  color="indigo"
+                  stats={stats && stats.pending_reviews > 0 ? `${stats.pending_reviews} 待審核` : undefined}
+                />
+                <FeatureCard
+                  title="系統監控"
+                  description="監控系統健康狀況和性能指標"
+                  icon={Monitor}
+                  href="/dashboard/monitoring"
+                  color="gray"
+                />
+                <FeatureCard
+                  title="AI 配置"
+                  description="配置內容審核和AI模型參數"
+                  icon={Bot}
+                  href="/dashboard/ai-config"
+                  color="pink"
+                />
+                <FeatureCard
+                  title="系統設定"
+                  description="管理平台的全局設定和配置"
+                  icon={Settings}
+                  href="/dashboard/settings"
+                  color="red"
+                />
+              </div>
             </div>
 
             {/* 快速操作區域 */}
