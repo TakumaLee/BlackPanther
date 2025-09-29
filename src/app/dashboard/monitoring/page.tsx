@@ -4,28 +4,28 @@ import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Alert, AlertDescription } from '@/components/ui/alert';
+// import { Alert, AlertDescription } from '@/components/ui/alert';
 import {
   Activity,
   Server,
   Database,
-  Wifi,
-  HardDrive,
-  Cpu,
-  MemoryStick,
-  Clock,
+  // Wifi,
+  // HardDrive,
+  // Cpu,
+  // MemoryStick,
+  // Clock,
   AlertTriangle,
   CheckCircle2,
   XCircle,
   RefreshCw,
-  TrendingUp,
-  TrendingDown,
+  // TrendingUp,
+  // TrendingDown,
   Zap,
   Globe,
-  Monitor,
-  BarChart3,
-  Shield,
-  Users
+  // Monitor,
+  // BarChart3,
+  Shield
+  // Users
 } from 'lucide-react';
 
 // 模擬數據接口

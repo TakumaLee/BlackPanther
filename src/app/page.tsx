@@ -12,7 +12,7 @@ import {
   UserPlus,
   Activity,
   ArrowUpRight,
-  ArrowDownRight,
+  // ArrowDownRight,
   Clock,
   CheckCircle2
 } from 'lucide-react';

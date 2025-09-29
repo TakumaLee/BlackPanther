@@ -238,7 +238,7 @@ export function getBreadcrumbs(path: string): RouteItem[] {
   const segments = path.split('/').filter(Boolean);
 
   let currentPath = '';
-  segments.forEach((segment, index) => {
+  segments.forEach((segment) => {
     currentPath += `/${segment}`;
     const route = getRouteByPath(currentPath);
     if (route) {

@@ -9,12 +9,10 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
   BarChart3,
   TrendingUp,
-  TrendingDown,
   Users,
   FileText,
   DollarSign,
   Activity,
-  Calendar,
   Download,
   RefreshCw,
   ArrowUpRight,
@@ -78,9 +76,13 @@ export default function AnalyticsPage() {
   const [refreshing, setRefreshing] = useState(false);
 
   useEffect(() => {
-    if (currentUser) {
-      loadAnalytics();
-    }
+    const load = async () => {
+      if (currentUser) {
+        await loadAnalytics();
+      }
+    };
+    load();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentUser, selectedPeriod]);
 
   const loadAnalytics = async () => {
@@ -94,7 +96,7 @@ export default function AnalyticsPage() {
         userAnalytics,
         contentAnalytics,
         revenueAnalytics,
-        fraudAnalytics,
+        , // fraudAnalytics - not used
         userGrowthData,
         articleStats,
         revenueStats
@@ -172,8 +174,8 @@ export default function AnalyticsPage() {
         },
         revenue_analytics: {
           coin_sales: revenueAnalytics.top_products.map((product, index) => ({
-            package: product.name || `套餐 ${index + 1}`,
-            sales: product.sales || 0,
+            package: product.product_id || `套餐 ${index + 1}`,
+            sales: product.count || 0,
             revenue: product.revenue || 0
           })),
           ai_usage: [

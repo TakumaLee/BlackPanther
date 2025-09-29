@@ -7,8 +7,8 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Alert, AlertDescription } from '@/components/ui/alert';
+// import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+// import { Alert, AlertDescription } from '@/components/ui/alert';
 import {
   FileText,
   Search,
@@ -21,7 +21,7 @@ import {
   BarChart3,
   MessageSquare,
   Heart,
-  Share2,
+  // Share2,
   ChevronLeft,
   ChevronRight
 } from 'lucide-react';
@@ -89,29 +89,29 @@ export default function ContentPage() {
         page: currentPage,
         limit: 10,
         sort: 'latest',
-        filter: filters.status || 'all',
+        filter: (filters.status || 'all') as 'active' | 'all',
         search: filters.search || undefined
       });
 
       // 將 API 回應轉換為頁面需要的格式
-      const transformedArticles: Article[] = response.articles.map((article: any) => ({
-        id: article.id,
-        title: article.title || '無標題',
-        content: article.content || '',
-        author_id: article.user_id,
-        author_name: `匿名用戶#${article.user_id?.slice(-4) || '0000'}`,
-        created_at: article.created_at,
-        updated_at: article.updated_at || article.created_at,
+      const transformedArticles: Article[] = response.articles.map((article: Record<string, unknown>) => ({
+        id: article.id as string,
+        title: (article.title as string) || '無標題',
+        content: (article.content as string) || '',
+        author_id: article.user_id as string,
+        author_name: `匿名用戶#${(article.user_id as string)?.slice(-4) || '0000'}`,
+        created_at: article.created_at as string,
+        updated_at: (article.updated_at as string) || (article.created_at as string),
         status: article.is_active === false ? 'deleted' :
-                article.expires_at && new Date(article.expires_at) < new Date() ? 'expired' : 'active',
-        reactions_count: article.reactions_count || 0,
+                article.expires_at && new Date(article.expires_at as string) < new Date() ? 'expired' : 'active',
+        reactions_count: (article.reactions_count as number) || 0,
         comments_count: 0, // Comments are deprecated
         reports_count: 0, // TODO: Add reports count when available
         ai_analysis: article.analysis ? {
-          sentiment: article.analysis.sentiment_category || 'neutral',
-          risk_score: parseFloat(article.analysis.confidence_score) || 0,
-          keywords: article.analysis.detected_emotions ?
-            article.analysis.detected_emotions.split(',').map((e: string) => e.trim()) : []
+          sentiment: ((article.analysis as Record<string, unknown>).sentiment_category as string) || 'neutral',
+          risk_score: parseFloat(((article.analysis as Record<string, unknown>).confidence_score as string) || '0') || 0,
+          keywords: (article.analysis as Record<string, unknown>).detected_emotions ?
+            ((article.analysis as Record<string, unknown>).detected_emotions as string).split(',').map((e: string) => e.trim()) : []
         } : undefined
       }));
 

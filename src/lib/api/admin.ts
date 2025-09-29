@@ -97,7 +97,7 @@ class AdminApiClient {
       }
 
       return await response.json();
-    } catch (error) {
+    } catch {
       if (error instanceof Error) {
         throw error;
       }
@@ -111,7 +111,7 @@ class AdminApiClient {
   async getDashboardStats(): Promise<DashboardStats> {
     try {
       return await this.makeRequest<DashboardStats>('/dashboard/stats');
-    } catch (error) {
+    } catch {
       // Provide fallback data for dashboard stats
       console.warn('Dashboard stats API failed, returning fallback data:', error);
       return {
@@ -250,7 +250,7 @@ class AdminApiClient {
   async getUserAnalytics(): Promise<UserAnalytics> {
     try {
       return await this.makeRequest<UserAnalytics>('/stats/users');
-    } catch (error) {
+    } catch {
       console.warn('User analytics API failed, returning fallback data:', error);
       return {
         total_users: 0,
@@ -269,7 +269,7 @@ class AdminApiClient {
   async getContentAnalytics(): Promise<ContentAnalytics> {
     try {
       return await this.makeRequest<ContentAnalytics>('/stats/content');
-    } catch (error) {
+    } catch {
       console.warn('Content analytics API failed, returning fallback data:', error);
       return {
         total_articles: 0,
@@ -289,7 +289,7 @@ class AdminApiClient {
   async getRevenueAnalytics(): Promise<RevenueAnalytics> {
     try {
       return await this.makeRequest<RevenueAnalytics>('/stats/revenue');
-    } catch (error) {
+    } catch {
       console.warn('Revenue analytics API failed, returning fallback data:', error);
       return {
         total_revenue: 0,
@@ -308,7 +308,7 @@ class AdminApiClient {
   async getFraudAnalytics(): Promise<FraudAnalytics> {
     try {
       return await this.makeRequest<FraudAnalytics>('/stats/fraud');
-    } catch (error) {
+    } catch {
       console.warn('Fraud analytics API failed, returning fallback data:', error);
       return {
         high_risk_users: 0,
@@ -345,7 +345,7 @@ class AdminApiClient {
     const query = params.toString();
     try {
       return await this.makeRequest<ReviewList>(`/reviews${query ? `?${query}` : ''}`);
-    } catch (error) {
+    } catch {
       // Provide fallback data for reviews
       console.warn('Reviews API failed, returning fallback data:', error);
       return {
@@ -381,7 +381,7 @@ class AdminApiClient {
     filter?: 'active' | 'all';
     search?: string;
   } = {}): Promise<{
-    articles: any[];
+    articles: Array<Record<string, unknown>>;
     total: number;
     page: number;
     limit: number;
@@ -417,7 +417,7 @@ class AdminApiClient {
         limit: data.limit || 20,
         has_next: data.has_next || false
       };
-    } catch (error) {
+    } catch {
       console.warn('Articles API failed, returning fallback data:', error);
       return {
         articles: [],
@@ -429,7 +429,7 @@ class AdminApiClient {
     }
   }
 
-  async getArticleDetail(articleId: string): Promise<any> {
+  async getArticleDetail(articleId: string): Promise<Record<string, unknown>> {
     const url = `${API_BASE_URL}/api/v1/articles/${articleId}`;
 
     try {
@@ -445,41 +445,41 @@ class AdminApiClient {
       }
 
       return await response.json();
-    } catch (error) {
+    } catch {
       throw new Error('Failed to fetch article detail');
     }
   }
 
   // Placeholder methods for admin-only content operations (to be implemented in backend)
-  async deleteArticleAsAdmin(articleId: string, reason: string): Promise<{ message: string }> {
+  async deleteArticleAsAdmin(_articleId: string, _reason: string): Promise<{ message: string }> {
     // TODO: Implement proper admin delete endpoint in backend
     throw new Error('Admin article deletion endpoint not implemented yet');
   }
 
-  async moderateArticle(articleId: string, action: 'approve' | 'reject', reason: string): Promise<{ message: string }> {
+  async moderateArticle(_articleId: string, _action: 'approve' | 'reject', _reason: string): Promise<{ message: string }> {
     // TODO: Implement article moderation endpoint in backend
     throw new Error('Article moderation endpoint not implemented yet');
   }
 
   // Economy Configuration APIs
-  async getEconomyConfig(): Promise<any> {
+  async getEconomyConfig(): Promise<Record<string, unknown>> {
     return this.makeRequest('/economy/config');
   }
 
-  async updateEconomyConfig(config: any): Promise<{ success: boolean; config: any; message: string }> {
+  async updateEconomyConfig(config: Record<string, unknown>): Promise<{ success: boolean; config: Record<string, unknown>; message: string }> {
     return this.makeRequest('/economy/config', {
       method: 'PUT',
       body: JSON.stringify(config),
     });
   }
 
-  async resetEconomyConfig(): Promise<{ success: boolean; config: any; message: string }> {
+  async resetEconomyConfig(): Promise<{ success: boolean; config: Record<string, unknown>; message: string }> {
     return this.makeRequest('/economy/config/reset', {
       method: 'POST',
     });
   }
 
-  async previewPricingChanges(model: string, newPrice: number): Promise<any> {
+  async previewPricingChanges(model: string, newPrice: number): Promise<Record<string, unknown>> {
     return this.makeRequest(`/economy/pricing-preview?model=${model}&new_price=${newPrice}`);
   }
 }

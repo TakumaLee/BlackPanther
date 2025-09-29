@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Alert, AlertDescription } from '@/components/ui/alert';
+// import { Alert, AlertDescription } from '@/components/ui/alert';
 import {
   UserPlus,
   Copy,
@@ -17,10 +17,10 @@ import {
   Users,
   Coins,
   Calendar,
-  Award,
+  // Award,
   Plus,
   Trash2,
-  Edit,
+  // Edit,
   CheckCircle2,
   XCircle,
   RefreshCw
