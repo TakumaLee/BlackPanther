@@ -110,7 +110,7 @@ class AdminApiClient {
   // Dashboard APIs
   async getDashboardStats(): Promise<DashboardStats> {
     try {
-      return await this.makeRequest<DashboardStats>('/dashboard/stats');
+      return await this.makeRequest<DashboardStats>('/stats');
     } catch (err) {
       // Provide fallback data for dashboard stats
       console.warn('Dashboard stats API failed, returning fallback data:', err);
@@ -132,15 +132,15 @@ class AdminApiClient {
   }
 
   async getUserGrowthStats(days: number = 30): Promise<UserGrowthData[]> {
-    return this.makeRequest<UserGrowthData[]>(`/dashboard/stats/user-growth?days=${days}`);
+    return this.makeRequest<UserGrowthData[]>(`/stats/user-growth?days=${days}`);
   }
 
   async getArticleStats(days: number = 30): Promise<ArticleStatsData[]> {
-    return this.makeRequest<ArticleStatsData[]>(`/dashboard/stats/articles?days=${days}`);
+    return this.makeRequest<ArticleStatsData[]>(`/stats/articles?days=${days}`);
   }
 
   async getRevenueStats(days: number = 30): Promise<RevenueData[]> {
-    return this.makeRequest<RevenueData[]>(`/dashboard/stats/revenue?days=${days}`);
+    return this.makeRequest<RevenueData[]>(`/stats/revenue?days=${days}`);
   }
 
   // User Management APIs
@@ -336,7 +336,7 @@ class AdminApiClient {
   // Review Management APIs
   async getReviews(filters: ReviewFilters = {}): Promise<ReviewList> {
     const params = new URLSearchParams();
-    
+
     if (filters.page) params.append('page', filters.page.toString());
     if (filters.limit) params.append('limit', filters.limit.toString());
     if (filters.status && filters.status !== 'all') params.append('status', filters.status);
@@ -344,7 +344,7 @@ class AdminApiClient {
 
     const query = params.toString();
     try {
-      return await this.makeRequest<ReviewList>(`/reviews${query ? `?${query}` : ''}`);
+      return await this.makeRequest<ReviewList>(`/invite-reviews${query ? `?${query}` : ''}`);
     } catch (err) {
       // Provide fallback data for reviews
       console.warn('Reviews API failed, returning fallback data:', err);
@@ -359,18 +359,19 @@ class AdminApiClient {
   }
 
   async getReview(reviewId: string): Promise<ReviewDetail> {
-    return this.makeRequest(`/reviews/${reviewId}`);
+    return this.makeRequest(`/invite-reviews/${reviewId}`);
   }
 
   async reviewRequest(reviewId: string, action: ReviewActionRequest): Promise<{ message: string }> {
-    return this.makeRequest(`/reviews/${reviewId}`, {
-      method: 'PUT',
+    const endpoint = action.action === 'approve' ? 'approve' : 'reject';
+    return this.makeRequest(`/invite-reviews/${reviewId}/${endpoint}`, {
+      method: 'POST',
       body: JSON.stringify(action),
     });
   }
 
   async getReviewStatistics(): Promise<ReviewStatistics> {
-    return this.makeRequest('/reviews/statistics');
+    return this.makeRequest('/invite-reviews/statistics');
   }
 
   // Content Management APIs (using general article API for now)

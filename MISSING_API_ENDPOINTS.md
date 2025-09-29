@@ -124,10 +124,27 @@
 
 ## 當前狀態
 
-- ✅ 用戶管理 API - 已實作並正常運作
-- ✅ 經濟系統配置 API - 已實作並正常運作
-- ✅ Dashboard 統計 API - 已實作並正常運作
-- ⚠️ 內容管理 API - 部分實作（缺少 admin 專用功能）
-- ❌ 其他模組 - 大部分未實作
+### ✅ 已實作 APIs（在 black-alligator 中）
+- ✅ 認證 API (`/admin/auth/*`) - 登入、登出、刷新 token
+- ✅ Dashboard 統計 API (`/admin/stats/*`) - 完整統計資料
+- ✅ 用戶管理 API (`/admin/users/*`) - 用戶列表、詳情、封鎖/解鎖
+- ✅ 經濟系統配置 API (`/admin/economy/*`) - 配置管理、重設
+- ✅ 邀請審核 API (`/admin/invite-reviews/*`) - 審核列表、批准/拒絕
+- ✅ 封鎖管理 API (`/admin/blocks/*`) - IP 和用戶封鎖
+- ✅ IP 監控 API (`/admin/ip-monitoring/*`) - 可疑 IP 監控
 
-最後更新：2024-01-15
+### ⚠️ 部分實作 APIs
+- ⚠️ 內容管理 API - 使用通用 articles API，缺少 admin 專用功能（如強制刪除、審核）
+
+### ❌ 未實作 APIs
+- ❌ 系統設定 API
+- ❌ 通知系統 API
+- ❌ 邀請碼管理 API（與邀請審核不同）
+- ❌ 系統監控 API（系統狀態、性能指標、日誌）
+- ❌ AI 配置 API
+- ❌ 自定義統計報告 API
+- ❌ 進階分析 API（人口統計、情感分析、話題分析）
+- ❌ 安全與審計 API
+- ❌ 批量操作 API
+
+最後更新：2025-09-29
