@@ -95,8 +95,9 @@ export default function EconomyPage() {
     try {
       setSaving(true);
       const data = await adminApi.resetEconomyConfig();
-      setConfig(data.config);
-      setEditedConfig(data.config);
+      const resetConfig = data.config as unknown as EconomyConfig;
+      setConfig(resetConfig);
+      setEditedConfig(resetConfig);
       setMessage({ type: 'success', text: data.message || '已重設為預設值' });
     } catch (err) {
       console.error('Failed to reset economy config:', err);

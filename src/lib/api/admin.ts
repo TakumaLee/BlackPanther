@@ -76,7 +76,7 @@ class AdminApiClient {
           } else if (response.status >= 500) {
             errorType = 'server_error';
           }
-        } catch {
+        } catch (err) {
           // 如果無法解析錯誤JSON，使用狀態碼
           // 但對於 401，不要立即標記為 auth_error，除非確定是認證問題
           if (response.status === 401) {
@@ -97,9 +97,9 @@ class AdminApiClient {
       }
 
       return await response.json();
-    } catch {
-      if (error instanceof Error) {
-        throw error;
+    } catch (err) {
+      if (err instanceof Error) {
+        throw err;
       }
       const unknownError = new Error('API請求失敗') as Error & { type?: string };
       unknownError.type = 'network_error';
@@ -111,9 +111,9 @@ class AdminApiClient {
   async getDashboardStats(): Promise<DashboardStats> {
     try {
       return await this.makeRequest<DashboardStats>('/dashboard/stats');
-    } catch {
+    } catch (err) {
       // Provide fallback data for dashboard stats
-      console.warn('Dashboard stats API failed, returning fallback data:', error);
+      console.warn('Dashboard stats API failed, returning fallback data:', err);
       return {
         total_users: 0,
         total_articles: 0,
@@ -250,8 +250,8 @@ class AdminApiClient {
   async getUserAnalytics(): Promise<UserAnalytics> {
     try {
       return await this.makeRequest<UserAnalytics>('/stats/users');
-    } catch {
-      console.warn('User analytics API failed, returning fallback data:', error);
+    } catch (err) {
+      console.warn('User analytics API failed, returning fallback data:', err);
       return {
         total_users: 0,
         active_users_today: 0,
@@ -269,8 +269,8 @@ class AdminApiClient {
   async getContentAnalytics(): Promise<ContentAnalytics> {
     try {
       return await this.makeRequest<ContentAnalytics>('/stats/content');
-    } catch {
-      console.warn('Content analytics API failed, returning fallback data:', error);
+    } catch (err) {
+      console.warn('Content analytics API failed, returning fallback data:', err);
       return {
         total_articles: 0,
         articles_today: 0,
@@ -289,8 +289,8 @@ class AdminApiClient {
   async getRevenueAnalytics(): Promise<RevenueAnalytics> {
     try {
       return await this.makeRequest<RevenueAnalytics>('/stats/revenue');
-    } catch {
-      console.warn('Revenue analytics API failed, returning fallback data:', error);
+    } catch (err) {
+      console.warn('Revenue analytics API failed, returning fallback data:', err);
       return {
         total_revenue: 0,
         revenue_today: 0,
@@ -308,8 +308,8 @@ class AdminApiClient {
   async getFraudAnalytics(): Promise<FraudAnalytics> {
     try {
       return await this.makeRequest<FraudAnalytics>('/stats/fraud');
-    } catch {
-      console.warn('Fraud analytics API failed, returning fallback data:', error);
+    } catch (err) {
+      console.warn('Fraud analytics API failed, returning fallback data:', err);
       return {
         high_risk_users: 0,
         medium_risk_users: 0,
@@ -345,9 +345,9 @@ class AdminApiClient {
     const query = params.toString();
     try {
       return await this.makeRequest<ReviewList>(`/reviews${query ? `?${query}` : ''}`);
-    } catch {
+    } catch (err) {
       // Provide fallback data for reviews
-      console.warn('Reviews API failed, returning fallback data:', error);
+      console.warn('Reviews API failed, returning fallback data:', err);
       return {
         reviews: [],
         total: 0,
@@ -417,8 +417,8 @@ class AdminApiClient {
         limit: data.limit || 20,
         has_next: data.has_next || false
       };
-    } catch {
-      console.warn('Articles API failed, returning fallback data:', error);
+    } catch (err) {
+      console.warn('Articles API failed, returning fallback data:', err);
       return {
         articles: [],
         total: 0,
@@ -445,7 +445,7 @@ class AdminApiClient {
       }
 
       return await response.json();
-    } catch {
+    } catch (err) {
       throw new Error('Failed to fetch article detail');
     }
   }
