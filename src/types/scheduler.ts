@@ -358,3 +358,58 @@ export interface SchedulerConfig {
     wsConnection: number
   }
 }
+
+// ============================================================================
+// Additional Types for New Backend API
+// ============================================================================
+
+// Scheduler Status (from /status endpoint)
+export interface SchedulerStatus {
+  is_running: boolean
+  is_leader: boolean
+  instance_id: string
+  started_at: string | Date
+  leader_since?: string | Date | null
+  jobs_count: number
+}
+
+// Scheduled Job (from /jobs endpoint)
+export interface ScheduledJob {
+  id: string
+  name: string
+  func: string
+  trigger: string
+  next_run_time: string | Date
+  args?: unknown[]
+  kwargs?: Record<string, unknown>
+}
+
+// Distributed Lock (from /locks-list endpoint)
+export interface DistributedLock {
+  lock_name: string
+  instance_id: string
+  acquired_at: string | Date
+  expires_at: string | Date
+  is_expired: boolean
+}
+
+// Leader Election (from /leader-election endpoint)
+export interface LeaderElection {
+  current_leader?: string | null
+  election_time?: string | Date | null
+  candidates: number
+}
+
+// Task Execution List Response (from /task-executions endpoint)
+export interface TaskExecutionListResponse {
+  executions: TaskExecution[]
+  total: number
+  page?: number
+  limit?: number
+}
+
+// Running Tasks Response (from /running-tasks endpoint)
+export interface RunningTasksResponse {
+  running_tasks: TaskExecution[]
+  count: number
+}

@@ -389,6 +389,157 @@ class SchedulerAPI {
   }
 
   // ============================================================================
+  // Distributed Locks Management
+  // ============================================================================
+
+  async getDistributedLocks(): Promise<{ locks: Array<{
+    lock_name: string
+    instance_id: string
+    acquired_at: string
+    expires_at: string
+    is_expired: boolean
+  }> }> {
+    const response = await this.request<{ locks: Array<{
+      lock_name: string
+      instance_id: string
+      acquired_at: string
+      expires_at: string
+      is_expired: boolean
+    }> }>('/api/v1/admin/scheduler/locks-list')
+    if (!response.success || !response.data) {
+      throw new Error(response.error || 'Failed to fetch distributed locks')
+    }
+    return response.data
+  }
+
+  async releaseLock(lockName: string): Promise<void> {
+    const response = await this.request(`/api/v1/admin/scheduler/locks/${encodeURIComponent(lockName)}`, {
+      method: 'DELETE',
+    })
+    if (!response.success) {
+      throw new Error(response.error || 'Failed to release lock')
+    }
+  }
+
+  // ============================================================================
+  // Task Execution Management
+  // ============================================================================
+
+  async getTaskExecutions(params?: {
+    page?: number
+    limit?: number
+  }): Promise<{
+    executions: Array<{
+      id: string
+      task_name: string
+      instance_id: string
+      status: 'running' | 'completed' | 'failed'
+      started_at: string
+      completed_at?: string
+      duration_seconds?: number
+      error_message?: string
+    }>
+    total: number
+  }> {
+    const queryParams = new URLSearchParams()
+    if (params?.page) queryParams.append('page', params.page.toString())
+    if (params?.limit) queryParams.append('limit', params.limit.toString())
+
+    const queryString = queryParams.toString()
+    const endpoint = queryString ? `/api/v1/admin/scheduler/task-executions?${queryString}` : '/api/v1/admin/scheduler/task-executions'
+
+    const response = await this.request<{
+      executions: Array<{
+        id: string
+        task_name: string
+        instance_id: string
+        status: 'running' | 'completed' | 'failed'
+        started_at: string
+        completed_at?: string
+        duration_seconds?: number
+        error_message?: string
+      }>
+      total: number
+    }>(endpoint)
+    if (!response.success || !response.data) {
+      throw new Error(response.error || 'Failed to fetch task executions')
+    }
+    return response.data
+  }
+
+  async getRunningTasks(): Promise<Array<{
+    id: string
+    task_name: string
+    instance_id: string
+    status: 'running' | 'completed' | 'failed'
+    started_at: string
+    completed_at?: string
+    duration_seconds?: number
+    error_message?: string
+  }>> {
+    const response = await this.request<{
+      running_tasks: Array<{
+        id: string
+        task_name: string
+        instance_id: string
+        status: 'running' | 'completed' | 'failed'
+        started_at: string
+        completed_at?: string
+        duration_seconds?: number
+        error_message?: string
+      }>
+    }>('/api/v1/admin/scheduler/running-tasks')
+    if (!response.success || !response.data) {
+      throw new Error(response.error || 'Failed to fetch running tasks')
+    }
+    return response.data.running_tasks
+  }
+
+  async cancelTask(executionId: string): Promise<void> {
+    const response = await this.request(`/api/v1/admin/scheduler/cancel-task/${executionId}`, {
+      method: 'POST',
+    })
+    if (!response.success) {
+      throw new Error(response.error || 'Failed to cancel task')
+    }
+  }
+
+  async cleanupExpiredData(): Promise<void> {
+    const response = await this.request('/api/v1/admin/scheduler/cleanup-expired', {
+      method: 'POST',
+    })
+    if (!response.success) {
+      throw new Error(response.error || 'Failed to cleanup expired data')
+    }
+  }
+
+  // ============================================================================
+  // Scheduler Instances
+  // ============================================================================
+
+  async getSchedulerInstances(): Promise<Array<{
+    instance_id: string
+    is_leader: boolean
+    started_at: string
+    last_heartbeat: string
+    is_healthy: boolean
+  }>> {
+    const response = await this.request<{
+      instances: Array<{
+        instance_id: string
+        is_leader: boolean
+        started_at: string
+        last_heartbeat: string
+        is_healthy: boolean
+      }>
+    }>('/api/v1/admin/scheduler/instances')
+    if (!response.success || !response.data) {
+      throw new Error(response.error || 'Failed to fetch scheduler instances')
+    }
+    return response.data.instances
+  }
+
+  // ============================================================================
   // Configuration Management
   // ============================================================================
 

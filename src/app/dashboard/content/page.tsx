@@ -71,6 +71,9 @@ export default function ContentPage() {
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [hasNext, setHasNext] = useState(false);
+  const [moderating, setModerating] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+  const [moderateReason, setModerateReason] = useState('');
 
   // 載入文章數據
   useEffect(() => {
@@ -191,22 +194,58 @@ export default function ContentPage() {
     setCurrentPage(page);
   };
 
-  const handleDeleteArticle = async (articleId: string) => {
-    if (!confirm('確定要刪除這篇文章嗎？')) return;
+  const handleDeleteArticle = async (articleId: string, reason?: string) => {
+    const deleteReason = reason || prompt('請輸入刪除原因：');
+    if (!deleteReason || !deleteReason.trim()) {
+      alert('請輸入刪除原因');
+      return;
+    }
 
+    if (!confirm('確定要刪除這篇文章嗎？此操作無法復原！')) {
+      return;
+    }
+
+    setDeleting(true);
     try {
-      // TODO: 使用 admin 專用的刪除 API
-      await adminApi.deleteArticleAsAdmin(articleId, '管理員刪除');
+      await adminApi.deleteArticleAsAdmin(articleId, deleteReason);
+      alert('文章已成功刪除');
+      setSelectedArticle(null);
       fetchArticles(); // 重新載入數據
     } catch (err) {
       console.error('Delete failed:', err);
       alert('刪除失敗：' + (err instanceof Error ? err.message : '未知錯誤'));
+    } finally {
+      setDeleting(false);
+    }
+  };
+
+  const handleModerateArticle = async (articleId: string, action: 'approve' | 'reject') => {
+    if (action === 'reject' && !moderateReason.trim()) {
+      alert('請輸入拒絕原因');
+      return;
+    }
+
+    if (!confirm(`確定要${action === 'approve' ? '批准' : '拒絕'}這篇文章嗎？`)) {
+      return;
+    }
+
+    setModerating(true);
+    try {
+      await adminApi.moderateArticle(articleId, action, moderateReason || undefined);
+      alert(`文章已${action === 'approve' ? '批准' : '拒絕'}`);
+      setSelectedArticle(null);
+      setModerateReason('');
+      fetchArticles(); // 重新載入數據
+    } catch (err) {
+      console.error('Moderate failed:', err);
+      alert(`審核失敗：${err instanceof Error ? err.message : '未知錯誤'}`);
+    } finally {
+      setModerating(false);
     }
   };
 
   const handleApproveArticle = async (articleId: string) => {
     try {
-      // TODO: 使用文章審核 API
       await adminApi.moderateArticle(articleId, 'approve', '管理員通過審核');
       fetchArticles(); // 重新載入數據
     } catch (err) {
@@ -455,10 +494,11 @@ export default function ContentPage() {
                     variant="outline"
                     size="sm"
                     onClick={() => handleDeleteArticle(article.id)}
-                    className="text-red-600 border-red-600 hover:bg-red-50"
+                    disabled={deleting}
+                    className="text-red-600 border-red-600 hover:bg-red-50 disabled:bg-gray-100 disabled:cursor-not-allowed"
                   >
                     <Trash2 className="h-4 w-4 mr-1" />
-                    刪除
+                    {deleting ? '處理中...' : '刪除'}
                   </Button>
                 </div>
               </div>
@@ -563,28 +603,52 @@ export default function ContentPage() {
                   </div>
                 )}
 
-                <div className="flex justify-end gap-2">
-                  {selectedArticle.status === 'reported' && (
+                {/* 審核區域 */}
+                <div className="border-t pt-4 mt-4">
+                  <h4 className="font-medium mb-3 text-[var(--foreground)]">文章審核</h4>
+
+                  {/* 拒絕原因輸入框 */}
+                  <div className="mb-4">
+                    <Label htmlFor="moderateReason">拒絕原因（拒絕時必填）</Label>
+                    <textarea
+                      id="moderateReason"
+                      className="mt-1 w-full border border-[var(--border)] rounded-lg p-3 bg-[var(--surface)] text-[var(--foreground)] min-h-[80px] focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      rows={3}
+                      value={moderateReason}
+                      onChange={(e) => setModerateReason(e.target.value)}
+                      placeholder="請輸入拒絕原因..."
+                      disabled={moderating}
+                    />
+                  </div>
+
+                  {/* 審核和刪除按鈕 */}
+                  <div className="flex gap-3">
                     <Button
-                      onClick={() => {
-                        handleApproveArticle(selectedArticle.id);
-                        setSelectedArticle(null);
-                      }}
-                      className="bg-green-600 hover:bg-green-700"
+                      onClick={() => handleModerateArticle(selectedArticle.id, 'approve')}
+                      disabled={moderating || deleting}
+                      className="flex-1 bg-green-600 hover:bg-green-700 disabled:bg-gray-400 disabled:cursor-not-allowed"
                     >
-                      通過審核
+                      <CheckCircle2 className="h-4 w-4 mr-1" />
+                      {moderating ? '處理中...' : '批准文章'}
                     </Button>
-                  )}
-                  <Button
-                    variant="outline"
-                    onClick={() => {
-                      handleDeleteArticle(selectedArticle.id);
-                      setSelectedArticle(null);
-                    }}
-                    className="text-red-600 border-red-600 hover:bg-red-50"
-                  >
-                    刪除文章
-                  </Button>
+                    <Button
+                      onClick={() => handleModerateArticle(selectedArticle.id, 'reject')}
+                      disabled={moderating || deleting}
+                      className="flex-1 bg-yellow-600 hover:bg-yellow-700 disabled:bg-gray-400 disabled:cursor-not-allowed"
+                    >
+                      <AlertTriangle className="h-4 w-4 mr-1" />
+                      {moderating ? '處理中...' : '拒絕文章'}
+                    </Button>
+                    <Button
+                      variant="outline"
+                      onClick={() => handleDeleteArticle(selectedArticle.id)}
+                      disabled={moderating || deleting}
+                      className="flex-1 text-red-600 border-red-600 hover:bg-red-50 disabled:bg-gray-100 disabled:cursor-not-allowed"
+                    >
+                      <Trash2 className="h-4 w-4 mr-1" />
+                      {deleting ? '刪除中...' : '刪除文章'}
+                    </Button>
+                  </div>
                 </div>
               </div>
             </CardContent>

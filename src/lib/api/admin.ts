@@ -459,15 +459,52 @@ class AdminApiClient {
     }
   }
 
-  // Placeholder methods for admin-only content operations (to be implemented in backend)
-  async deleteArticleAsAdmin(_articleId: string, _reason: string): Promise<{ message: string }> {
-    // TODO: Implement proper admin delete endpoint in backend
-    throw new Error('Admin article deletion endpoint not implemented yet');
+  // Admin Article Management APIs
+  async deleteArticleAsAdmin(articleId: string, reason: string): Promise<{ message: string }> {
+    return this.makeRequest(`/articles/${articleId}`, {
+      method: 'DELETE',
+      body: JSON.stringify({ reason }),
+    });
   }
 
-  async moderateArticle(_articleId: string, _action: 'approve' | 'reject', _reason: string): Promise<{ message: string }> {
-    // TODO: Implement article moderation endpoint in backend
-    throw new Error('Article moderation endpoint not implemented yet');
+  async moderateArticle(articleId: string, action: 'approve' | 'reject', reason?: string): Promise<{ message: string }> {
+    return this.makeRequest(`/articles/${articleId}/moderate`, {
+      method: 'POST',
+      body: JSON.stringify({ action, reason }),
+    });
+  }
+
+  async batchModerateArticles(
+    articleIds: string[],
+    action: 'approve' | 'reject',
+    reason?: string
+  ): Promise<{
+    success_count: number;
+    failed_count: number;
+    success_ids: string[];
+    failed_ids: Array<{ id: string; error: string }>;
+    message: string
+  }> {
+    return this.makeRequest('/articles/batch-moderate', {
+      method: 'POST',
+      body: JSON.stringify({ article_ids: articleIds, action, reason }),
+    });
+  }
+
+  async batchDeleteArticles(
+    articleIds: string[],
+    reason: string
+  ): Promise<{
+    success_count: number;
+    failed_count: number;
+    success_ids: string[];
+    failed_ids: Array<{ id: string; error: string }>;
+    message: string
+  }> {
+    return this.makeRequest('/articles/batch-delete', {
+      method: 'DELETE',
+      body: JSON.stringify({ article_ids: articleIds, reason }),
+    });
   }
 
   // Economy Configuration APIs

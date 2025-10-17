@@ -20,6 +20,19 @@ import {
 } from 'lucide-react'
 import { ExecutionHistoryProps, TaskExecution } from '@/types/scheduler'
 
+interface ExtendedExecutionHistoryProps extends Partial<ExecutionHistoryProps> {
+  executions: TaskExecution[]
+  loading: boolean
+  onRefresh: () => void
+  onCancelTask?: (executionId: string) => Promise<void>
+  onLoadMore?: () => void
+  hasMore?: boolean
+  onViewExecution?: (execution: TaskExecution) => void
+  onRetryExecution?: (executionId: string) => Promise<void>
+  filters?: ExecutionHistoryProps['filters']
+  onFiltersChange?: (filters: ExecutionHistoryProps['filters']) => void
+}
+
 export default function ExecutionHistory({
   executions,
   loading,
@@ -28,12 +41,14 @@ export default function ExecutionHistory({
   hasMore,
   onViewExecution,
   onRetryExecution,
+  onCancelTask,
   filters,
   onFiltersChange,
-}: ExecutionHistoryProps) {
+}: ExtendedExecutionHistoryProps) {
   const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set())
   const [showFilters, setShowFilters] = useState(false)
   const [retryingExecutions, setRetryingExecutions] = useState<Set<string>>(new Set())
+  const [cancellingExecutions, setCancellingExecutions] = useState<Set<string>>(new Set())
 
   const getStatusIcon = (status: TaskExecution['status']) => {
     switch (status) {
@@ -100,6 +115,26 @@ export default function ExecutionHistory({
       console.error('Retry failed:', error)
     } finally {
       setRetryingExecutions(prev => {
+        const newSet = new Set(prev)
+        newSet.delete(executionId)
+        return newSet
+      })
+    }
+  }
+
+  const handleCancel = async (executionId: string) => {
+    if (!onCancelTask) return
+
+    if (!confirm('確定要取消此任務嗎？')) return
+
+    try {
+      setCancellingExecutions(prev => new Set(prev).add(executionId))
+      await onCancelTask(executionId)
+    } catch (error) {
+      console.error('Cancel failed:', error)
+      alert('取消任務失敗：' + (error instanceof Error ? error.message : '未知錯誤'))
+    } finally {
+      setCancellingExecutions(prev => {
         const newSet = new Set(prev)
         newSet.delete(executionId)
         return newSet
@@ -274,19 +309,33 @@ export default function ExecutionHistory({
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                     <div className="flex items-center space-x-2">
-                      <button
-                        onClick={() => onViewExecution(execution)}
-                        className="text-blue-600 hover:text-blue-900"
-                      >
-                        <Eye className="h-4 w-4" />
-                      </button>
+                      {onViewExecution && (
+                        <button
+                          onClick={() => onViewExecution(execution)}
+                          className="text-blue-600 hover:text-blue-900"
+                          title="查看詳情"
+                        >
+                          <Eye className="h-4 w-4" />
+                        </button>
+                      )}
                       {execution.status === 'failed' && onRetryExecution && (
                         <button
                           onClick={() => handleRetry(execution.id)}
                           disabled={retryingExecutions.has(execution.id)}
                           className="text-green-600 hover:text-green-900 disabled:opacity-50"
+                          title="重試任務"
                         >
                           <RotateCcw className={`h-4 w-4 ${retryingExecutions.has(execution.id) ? 'animate-spin' : ''}`} />
+                        </button>
+                      )}
+                      {execution.status === 'running' && onCancelTask && (
+                        <button
+                          onClick={() => handleCancel(execution.id)}
+                          disabled={cancellingExecutions.has(execution.id)}
+                          className="text-red-600 hover:text-red-900 disabled:opacity-50"
+                          title="取消任務"
+                        >
+                          <Square className={`h-4 w-4 ${cancellingExecutions.has(execution.id) ? 'animate-pulse' : ''}`} />
                         </button>
                       )}
                     </div>
