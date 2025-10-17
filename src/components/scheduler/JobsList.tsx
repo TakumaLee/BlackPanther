@@ -102,18 +102,6 @@ export default function JobsList({
     }
   };
 
-  const getTriggerTypeDisplay = (trigger: string) => {
-    if (trigger.includes('cron')) {
-      return 'Cron';
-    } else if (trigger.includes('interval')) {
-      return '間隔';
-    } else if (trigger.includes('date')) {
-      return '定時';
-    } else {
-      return trigger;
-    }
-  };
-
   return (
     <Card className="border-[var(--border)] bg-[var(--surface)]">
       <CardHeader>
@@ -170,7 +158,7 @@ export default function JobsList({
 
                       <div className="flex items-center gap-2 text-[var(--text-secondary)]">
                         <span className="font-medium">觸發器:</span>
-                        <span>{getTriggerTypeDisplay(task.trigger)}</span>
+                        <span>Cron</span>
                         {task.cron_expression && (
                           <code className="text-xs bg-[var(--surface-hover)] px-2 py-0.5 rounded">
                             {task.cron_expression}

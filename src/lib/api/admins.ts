@@ -8,7 +8,6 @@ import {
   AdminListResponse,
   AdminCreateRequest,
   AdminUpdateRequest,
-  AdminLog,
   AdminLogsResponse,
   ResetPasswordResponse,
   AdminFilters
