@@ -366,7 +366,7 @@ export default function SchedulerPage() {
               onViewExecution={handleViewExecution}
               onRetryExecution={handleRetryExecution}
               filters={executionFilters}
-              onFiltersChange={setExecutionFilters}
+              onFiltersChange={(filters) => setExecutionFilters(filters || {})}
             />
           )}
 
