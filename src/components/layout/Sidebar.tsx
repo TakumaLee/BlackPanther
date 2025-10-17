@@ -16,7 +16,10 @@ import {
   Settings,
   UserPlus,
   Activity,
-  TrendingUp
+  TrendingUp,
+  Cpu,
+  Globe,
+  UserCog
 } from 'lucide-react'
 
 interface SidebarProps {
@@ -99,6 +102,12 @@ const navigation: NavigationItem[] = [
     current: false,
   },
   {
+    name: 'IP 監控',
+    href: '/dashboard/ip-monitoring',
+    icon: Globe,
+    current: false,
+  },
+  {
     name: '統計報告',
     href: '/dashboard/stats',
     icon: BarChart3,
@@ -117,9 +126,21 @@ const navigation: NavigationItem[] = [
     current: false,
   },
   {
+    name: '排程管理',
+    href: '/dashboard/scheduler',
+    icon: Cpu,
+    current: false,
+  },
+  {
     name: 'AI 配置',
     href: '/dashboard/ai-config',
     icon: TrendingUp,
+    current: false,
+  },
+  {
+    name: '管理員管理',
+    href: '/dashboard/admins',
+    icon: UserCog,
     current: false,
   },
   {
