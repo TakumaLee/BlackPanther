@@ -21,51 +21,7 @@ import {
   Filter,
   Globe
 } from 'lucide-react';
-
-// 模擬數據接口
-interface AIModel {
-  id: string;
-  name: string;
-  provider: string;
-  type: 'sentiment' | 'content_analysis' | 'moderation' | 'translation';
-  api_endpoint: string;
-  api_key: string;
-  enabled: boolean;
-  rate_limit: number;
-  timeout: number;
-  cost_per_request: number;
-  usage_stats: {
-    total_requests: number;
-    successful_requests: number;
-    failed_requests: number;
-    avg_response_time: number;
-  };
-}
-
-interface AIConfig {
-  models: AIModel[];
-  analysis_settings: {
-    auto_moderate: boolean;
-    sentiment_threshold: number;
-    toxicity_threshold: number;
-    min_confidence: number;
-    batch_size: number;
-    retry_attempts: number;
-  };
-  content_filters: {
-    enable_nsfw_detection: boolean;
-    enable_spam_detection: boolean;
-    enable_hate_speech_detection: boolean;
-    enable_self_harm_detection: boolean;
-    custom_keywords: string[];
-  };
-  monitoring: {
-    log_all_requests: boolean;
-    alert_on_failures: boolean;
-    performance_tracking: boolean;
-    cost_tracking: boolean;
-  };
-}
+import { getAIConfig, updateAIConfig, testAIModel, resetAIConfig, AIConfig, TestModelResponse } from '@/lib/api/ai-config';
 
 export default function AIConfigPage() {
   const [config, setConfig] = useState<AIConfig | null>(null);
@@ -74,126 +30,24 @@ export default function AIConfigPage() {
   const [testing, setTesting] = useState<string | null>(null);
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
   const [testInput, setTestInput] = useState('');
-  const [testResults, setTestResults] = useState<{
-    success: boolean;
-    response_time: number;
-    result: {
-      sentiment: string;
-      confidence: number;
-      toxicity_score: number;
-      categories: string[];
-      summary: string;
-    };
-  } | null>(null);
+  const [testResults, setTestResults] = useState<TestModelResponse | null>(null);
 
-  // 模擬數據加載
+  // Load AI configuration from API
   useEffect(() => {
     const loadAIConfig = async () => {
       setLoading(true);
-
-      // 模擬 API 延遲
-      await new Promise(resolve => setTimeout(resolve, 1000));
-
-      const mockConfig: AIConfig = {
-        models: [
-          {
-            id: '1',
-            name: 'GPT-4',
-            provider: 'OpenAI',
-            type: 'sentiment',
-            api_endpoint: 'https://api.openai.com/v1/chat/completions',
-            api_key: 'sk-***************',
-            enabled: true,
-            rate_limit: 60,
-            timeout: 30000,
-            cost_per_request: 0.03,
-            usage_stats: {
-              total_requests: 12456,
-              successful_requests: 12234,
-              failed_requests: 222,
-              avg_response_time: 1250
-            }
-          },
-          {
-            id: '2',
-            name: 'Claude-3',
-            provider: 'Anthropic',
-            type: 'content_analysis',
-            api_endpoint: 'https://api.anthropic.com/v1/messages',
-            api_key: 'sk-ant-***************',
-            enabled: true,
-            rate_limit: 50,
-            timeout: 25000,
-            cost_per_request: 0.025,
-            usage_stats: {
-              total_requests: 8976,
-              successful_requests: 8856,
-              failed_requests: 120,
-              avg_response_time: 980
-            }
-          },
-          {
-            id: '3',
-            name: 'Gemini Pro',
-            provider: 'Google',
-            type: 'moderation',
-            api_endpoint: 'https://generativelanguage.googleapis.com/v1beta/models/gemini-pro',
-            api_key: 'AIza***************',
-            enabled: false,
-            rate_limit: 40,
-            timeout: 20000,
-            cost_per_request: 0.02,
-            usage_stats: {
-              total_requests: 3456,
-              successful_requests: 3401,
-              failed_requests: 55,
-              avg_response_time: 750
-            }
-          },
-          {
-            id: '4',
-            name: 'Azure Translator',
-            provider: 'Microsoft',
-            type: 'translation',
-            api_endpoint: 'https://api.cognitive.microsofttranslator.com/translate',
-            api_key: '***************',
-            enabled: true,
-            rate_limit: 100,
-            timeout: 15000,
-            cost_per_request: 0.01,
-            usage_stats: {
-              total_requests: 5678,
-              successful_requests: 5634,
-              failed_requests: 44,
-              avg_response_time: 450
-            }
-          }
-        ],
-        analysis_settings: {
-          auto_moderate: true,
-          sentiment_threshold: 0.7,
-          toxicity_threshold: 0.8,
-          min_confidence: 0.6,
-          batch_size: 10,
-          retry_attempts: 3
-        },
-        content_filters: {
-          enable_nsfw_detection: true,
-          enable_spam_detection: true,
-          enable_hate_speech_detection: true,
-          enable_self_harm_detection: true,
-          custom_keywords: ['禁用詞1', '禁用詞2', '禁用詞3']
-        },
-        monitoring: {
-          log_all_requests: true,
-          alert_on_failures: true,
-          performance_tracking: true,
-          cost_tracking: true
-        }
-      };
-
-      setConfig(mockConfig);
-      setLoading(false);
+      try {
+        const data = await getAIConfig();
+        setConfig(data);
+      } catch (error) {
+        console.error('Failed to load AI config:', error);
+        setMessage({
+          type: 'error',
+          text: error instanceof Error ? error.message : '載入 AI 配置失敗'
+        });
+      } finally {
+        setLoading(false);
+      }
     };
 
     loadAIConfig();
@@ -204,12 +58,16 @@ export default function AIConfigPage() {
 
     try {
       setSaving(true);
-      // 模擬 API 請求
-      await new Promise(resolve => setTimeout(resolve, 2000));
-      setMessage({ type: 'success', text: 'AI 配置已更新成功' });
+      const result = await updateAIConfig(config);
+      setConfig(result.config);
+      setMessage({ type: 'success', text: result.message || 'AI 配置已更新成功' });
       setTimeout(() => setMessage(null), 3000);
-    } catch {
-      setMessage({ type: 'error', text: '更新配置失敗' });
+    } catch (error) {
+      console.error('Failed to update AI config:', error);
+      setMessage({
+        type: 'error',
+        text: error instanceof Error ? error.message : '更新配置失敗'
+      });
     } finally {
       setSaving(false);
     }
@@ -220,11 +78,15 @@ export default function AIConfigPage() {
 
     try {
       setSaving(true);
-      // 模擬重設
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      setMessage({ type: 'success', text: '已重設為預設值' });
-    } catch {
-      setMessage({ type: 'error', text: '重設失敗' });
+      const result = await resetAIConfig();
+      setConfig(result.config);
+      setMessage({ type: 'success', text: result.message || '已重設為預設值' });
+    } catch (error) {
+      console.error('Failed to reset AI config:', error);
+      setMessage({
+        type: 'error',
+        text: error instanceof Error ? error.message : '重設失敗'
+      });
     } finally {
       setSaving(false);
     }
@@ -238,25 +100,15 @@ export default function AIConfigPage() {
 
     try {
       setTesting(modelId);
-      // 模擬 API 測試
-      await new Promise(resolve => setTimeout(resolve, 2000));
-
-      const mockResult = {
-        success: true,
-        response_time: Math.floor(Math.random() * 2000) + 500,
-        result: {
-          sentiment: 'negative',
-          confidence: 0.85,
-          toxicity_score: 0.3,
-          categories: ['stress', 'work'],
-          summary: '用戶表達了工作壓力和焦慮情緒'
-        }
-      };
-
-      setTestResults(mockResult);
+      const result = await testAIModel(modelId, testInput);
+      setTestResults(result);
       setMessage({ type: 'success', text: '測試完成' });
-    } catch {
-      setMessage({ type: 'error', text: '測試失敗' });
+    } catch (error) {
+      console.error('Failed to test AI model:', error);
+      setMessage({
+        type: 'error',
+        text: error instanceof Error ? error.message : '測試失敗'
+      });
     } finally {
       setTesting(null);
     }

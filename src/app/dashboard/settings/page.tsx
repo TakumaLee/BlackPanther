@@ -21,59 +21,7 @@ import {
   FileText,
   Zap
 } from 'lucide-react';
-
-// 模擬數據接口
-interface SystemSettings {
-  general: {
-    site_name: string;
-    site_description: string;
-    site_url: string;
-    admin_email: string;
-    timezone: string;
-    language: string;
-    maintenance_mode: boolean;
-  };
-  article: {
-    default_expiry_hours: number;
-    max_content_length: number;
-    enable_ai_analysis: boolean;
-    auto_moderate: boolean;
-    allow_anonymous: boolean;
-    require_approval: boolean;
-  };
-  security: {
-    enable_rate_limiting: boolean;
-    max_requests_per_minute: number;
-    session_timeout_hours: number;
-    require_2fa: boolean;
-    password_min_length: number;
-    enable_ip_blocking: boolean;
-  };
-  email: {
-    smtp_host: string;
-    smtp_port: number;
-    smtp_username: string;
-    smtp_password: string;
-    from_email: string;
-    from_name: string;
-    enable_ssl: boolean;
-  };
-  storage: {
-    default_provider: string;
-    max_file_size_mb: number;
-    allowed_file_types: string[];
-    auto_backup: boolean;
-    backup_frequency_hours: number;
-    retention_days: number;
-  };
-  notifications: {
-    enable_push: boolean;
-    enable_email: boolean;
-    enable_sms: boolean;
-    admin_notifications: string[];
-    user_notifications: string[];
-  };
-}
+import { getSystemSettings, updateSystemSettings, resetSystemSettings, sendTestEmail, backupDatabase, SystemSettings } from '@/lib/api/system-settings';
 
 export default function SettingsPage() {
   const [settings, setSettings] = useState<SystemSettings | null>(null);
@@ -82,68 +30,22 @@ export default function SettingsPage() {
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
   const [activeTab, setActiveTab] = useState('general');
 
-  // 模擬數據加載
+  // Load system settings from API
   useEffect(() => {
     const loadSettings = async () => {
       setLoading(true);
-
-      // 模擬 API 延遲
-      await new Promise(resolve => setTimeout(resolve, 1000));
-
-      const mockSettings: SystemSettings = {
-        general: {
-          site_name: 'Black Swamp',
-          site_description: '負面情緒發洩平台',
-          site_url: 'https://blackswamp.app',
-          admin_email: 'admin@blackswamp.app',
-          timezone: 'Asia/Taipei',
-          language: 'zh-TW',
-          maintenance_mode: false
-        },
-        article: {
-          default_expiry_hours: 24,
-          max_content_length: 5000,
-          enable_ai_analysis: true,
-          auto_moderate: true,
-          allow_anonymous: true,
-          require_approval: false
-        },
-        security: {
-          enable_rate_limiting: true,
-          max_requests_per_minute: 60,
-          session_timeout_hours: 24,
-          require_2fa: false,
-          password_min_length: 8,
-          enable_ip_blocking: true
-        },
-        email: {
-          smtp_host: 'smtp.gmail.com',
-          smtp_port: 587,
-          smtp_username: 'noreply@blackswamp.app',
-          smtp_password: '****************',
-          from_email: 'noreply@blackswamp.app',
-          from_name: 'Black Swamp',
-          enable_ssl: true
-        },
-        storage: {
-          default_provider: 'aws_s3',
-          max_file_size_mb: 10,
-          allowed_file_types: ['jpg', 'jpeg', 'png', 'gif', 'webp'],
-          auto_backup: true,
-          backup_frequency_hours: 24,
-          retention_days: 30
-        },
-        notifications: {
-          enable_push: true,
-          enable_email: true,
-          enable_sms: false,
-          admin_notifications: ['new_reports', 'system_errors', 'high_risk_content'],
-          user_notifications: ['article_reactions', 'comment_replies', 'system_updates']
-        }
-      };
-
-      setSettings(mockSettings);
-      setLoading(false);
+      try {
+        const data = await getSystemSettings();
+        setSettings(data);
+      } catch (error) {
+        console.error('Failed to load system settings:', error);
+        setMessage({
+          type: 'error',
+          text: error instanceof Error ? error.message : '載入系統設定失敗'
+        });
+      } finally {
+        setLoading(false);
+      }
     };
 
     loadSettings();
@@ -154,12 +56,16 @@ export default function SettingsPage() {
 
     try {
       setSaving(true);
-      // 模擬 API 請求
-      await new Promise(resolve => setTimeout(resolve, 2000));
-      setMessage({ type: 'success', text: '系統設定已更新成功' });
+      const result = await updateSystemSettings(settings);
+      setSettings(result.settings);
+      setMessage({ type: 'success', text: result.message || '系統設定已更新成功' });
       setTimeout(() => setMessage(null), 3000);
-    } catch {
-      setMessage({ type: 'error', text: '更新設定失敗' });
+    } catch (error) {
+      console.error('Failed to update system settings:', error);
+      setMessage({
+        type: 'error',
+        text: error instanceof Error ? error.message : '更新設定失敗'
+      });
     } finally {
       setSaving(false);
     }
@@ -170,11 +76,15 @@ export default function SettingsPage() {
 
     try {
       setSaving(true);
-      // 模擬重設
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      setMessage({ type: 'success', text: '已重設為預設值' });
-    } catch {
-      setMessage({ type: 'error', text: '重設失敗' });
+      const result = await resetSystemSettings();
+      setSettings(result.settings);
+      setMessage({ type: 'success', text: result.message || '已重設為預設值' });
+    } catch (error) {
+      console.error('Failed to reset system settings:', error);
+      setMessage({
+        type: 'error',
+        text: error instanceof Error ? error.message : '重設失敗'
+      });
     } finally {
       setSaving(false);
     }
@@ -248,9 +158,14 @@ export default function SettingsPage() {
 
   const handleTestEmail = async () => {
     try {
-      setMessage({ type: 'success', text: '測試郵件已發送' });
-    } catch {
-      setMessage({ type: 'error', text: '發送測試郵件失敗' });
+      const result = await sendTestEmail();
+      setMessage({ type: 'success', text: result.message || '測試郵件已發送' });
+    } catch (error) {
+      console.error('Failed to send test email:', error);
+      setMessage({
+        type: 'error',
+        text: error instanceof Error ? error.message : '發送測試郵件失敗'
+      });
     }
   };
 
@@ -271,11 +186,14 @@ export default function SettingsPage() {
 
     try {
       setSaving(true);
-      // 模擬備份
-      await new Promise(resolve => setTimeout(resolve, 3000));
-      setMessage({ type: 'success', text: '資料庫備份已完成' });
-    } catch {
-      setMessage({ type: 'error', text: '資料庫備份失敗' });
+      const result = await backupDatabase();
+      setMessage({ type: 'success', text: result.message || '資料庫備份已完成' });
+    } catch (error) {
+      console.error('Failed to backup database:', error);
+      setMessage({
+        type: 'error',
+        text: error instanceof Error ? error.message : '資料庫備份失敗'
+      });
     } finally {
       setSaving(false);
     }

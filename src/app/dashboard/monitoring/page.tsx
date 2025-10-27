@@ -27,56 +27,7 @@ import {
   Shield
   // Users
 } from 'lucide-react';
-
-// 模擬數據接口
-interface SystemMetrics {
-  server: {
-    cpu_usage: number;
-    memory_usage: number;
-    disk_usage: number;
-    uptime: number;
-    load_average: [number, number, number];
-    status: 'healthy' | 'warning' | 'critical';
-  };
-  database: {
-    connections: number;
-    max_connections: number;
-    query_time_avg: number;
-    slow_queries: number;
-    status: 'healthy' | 'warning' | 'critical';
-  };
-  api: {
-    response_time_avg: number;
-    requests_per_minute: number;
-    error_rate: number;
-    status: 'healthy' | 'warning' | 'critical';
-  };
-  services: Array<{
-    name: string;
-    status: 'running' | 'stopped' | 'error';
-    uptime: number;
-    last_check: string;
-  }>;
-}
-
-interface LogEntry {
-  id: string;
-  timestamp: string;
-  level: 'info' | 'warning' | 'error' | 'critical';
-  service: string;
-  message: string;
-  details?: string;
-}
-
-interface AlertRule {
-  id: string;
-  name: string;
-  metric: string;
-  condition: string;
-  threshold: number;
-  enabled: boolean;
-  last_triggered?: string;
-}
+import { getSystemMetrics, getSystemLogs, getAlerts, toggleAlert, SystemMetrics, LogEntry, AlertRule, LogFilters } from '@/lib/api/monitoring';
 
 export default function MonitoringPage() {
   const [metrics, setMetrics] = useState<SystemMetrics | null>(null);
@@ -85,184 +36,49 @@ export default function MonitoringPage() {
   const [loading, setLoading] = useState(true);
   const [autoRefresh, setAutoRefresh] = useState(true);
   const [refreshInterval, setRefreshInterval] = useState(30); // seconds
+  const [logFilters, setLogFilters] = useState<LogFilters>({ page: 1, limit: 20 });
+  const [hasMoreLogs, setHasMoreLogs] = useState(false);
 
-  // 模擬數據加載
+  // Load monitoring data from API
   useEffect(() => {
     const loadMonitoringData = async () => {
       setLoading(true);
+      try {
+        const [metricsData, logsData, alertsData] = await Promise.all([
+          getSystemMetrics(),
+          getSystemLogs(logFilters),
+          getAlerts()
+        ]);
 
-      // 模擬 API 延遲
-      await new Promise(resolve => setTimeout(resolve, 1000));
-
-      const mockMetrics: SystemMetrics = {
-        server: {
-          cpu_usage: 45.2,
-          memory_usage: 68.7,
-          disk_usage: 34.1,
-          uptime: 2592000, // 30 days in seconds
-          load_average: [1.2, 1.5, 1.8],
-          status: 'healthy'
-        },
-        database: {
-          connections: 45,
-          max_connections: 100,
-          query_time_avg: 12.5,
-          slow_queries: 3,
-          status: 'healthy'
-        },
-        api: {
-          response_time_avg: 145,
-          requests_per_minute: 320,
-          error_rate: 0.8,
-          status: 'healthy'
-        },
-        services: [
-          {
-            name: 'Web Server',
-            status: 'running',
-            uptime: 2592000,
-            last_check: new Date().toISOString()
-          },
-          {
-            name: 'Database',
-            status: 'running',
-            uptime: 2591000,
-            last_check: new Date().toISOString()
-          },
-          {
-            name: 'Redis Cache',
-            status: 'running',
-            uptime: 2590000,
-            last_check: new Date().toISOString()
-          },
-          {
-            name: 'AI Service',
-            status: 'running',
-            uptime: 86400,
-            last_check: new Date().toISOString()
-          },
-          {
-            name: 'Background Jobs',
-            status: 'running',
-            uptime: 2589000,
-            last_check: new Date().toISOString()
-          }
-        ]
-      };
-
-      const mockLogs: LogEntry[] = [
-        {
-          id: '1',
-          timestamp: new Date(Date.now() - 300000).toISOString(),
-          level: 'info',
-          service: 'API',
-          message: '用戶認證成功',
-          details: 'User ID: 12345, IP: 192.168.1.100'
-        },
-        {
-          id: '2',
-          timestamp: new Date(Date.now() - 600000).toISOString(),
-          level: 'warning',
-          service: 'Database',
-          message: '慢查詢偵測',
-          details: 'Query execution time: 2.5s, Table: user_articles'
-        },
-        {
-          id: '3',
-          timestamp: new Date(Date.now() - 900000).toISOString(),
-          level: 'error',
-          service: 'AI Service',
-          message: 'API 請求失敗',
-          details: 'OpenAI API rate limit exceeded'
-        },
-        {
-          id: '4',
-          timestamp: new Date(Date.now() - 1200000).toISOString(),
-          level: 'info',
-          service: 'System',
-          message: '定期備份完成',
-          details: 'Database backup completed successfully'
-        },
-        {
-          id: '5',
-          timestamp: new Date(Date.now() - 1500000).toISOString(),
-          level: 'critical',
-          service: 'Security',
-          message: '可疑登入嘗試',
-          details: 'Multiple failed login attempts from IP: 203.0.113.0'
-        }
-      ];
-
-      const mockAlerts: AlertRule[] = [
-        {
-          id: '1',
-          name: 'CPU 使用率過高',
-          metric: 'cpu_usage',
-          condition: '>',
-          threshold: 80,
-          enabled: true,
-          last_triggered: '2024-01-19T10:30:00Z'
-        },
-        {
-          id: '2',
-          name: '記憶體不足',
-          metric: 'memory_usage',
-          condition: '>',
-          threshold: 90,
-          enabled: true
-        },
-        {
-          id: '3',
-          name: 'API 回應時間過長',
-          metric: 'response_time',
-          condition: '>',
-          threshold: 1000,
-          enabled: true
-        },
-        {
-          id: '4',
-          name: '錯誤率過高',
-          metric: 'error_rate',
-          condition: '>',
-          threshold: 5,
-          enabled: false
-        }
-      ];
-
-      setMetrics(mockMetrics);
-      setLogs(mockLogs);
-      setAlerts(mockAlerts);
-      setLoading(false);
+        setMetrics(metricsData);
+        setLogs(logsData.logs);
+        setHasMoreLogs(logsData.has_next);
+        setAlerts(alertsData);
+      } catch (error) {
+        console.error('Failed to load monitoring data:', error);
+      } finally {
+        setLoading(false);
+      }
     };
 
     loadMonitoringData();
   }, []);
 
-  // 自動刷新
+  // Auto-refresh metrics
   useEffect(() => {
     if (!autoRefresh) return;
 
-    const interval = setInterval(() => {
-      // 只更新指標，不重新載入整個頁面
-      if (metrics) {
-        setMetrics(prev => prev ? {
-          ...prev,
-          server: {
-            ...prev.server,
-            cpu_usage: Math.max(0, Math.min(100, prev.server.cpu_usage + (Math.random() - 0.5) * 10)),
-            memory_usage: Math.max(0, Math.min(100, prev.server.memory_usage + (Math.random() - 0.5) * 5))
-          },
-          api: {
-            ...prev.api,
-            response_time_avg: Math.max(50, prev.api.response_time_avg + (Math.random() - 0.5) * 50),
-            requests_per_minute: Math.max(100, prev.api.requests_per_minute + (Math.random() - 0.5) * 100)
-          }
-        } : null);
+    const interval = setInterval(async () => {
+      try {
+        const metricsData = await getSystemMetrics();
+        setMetrics(metricsData);
+      } catch (error) {
+        console.error('Failed to refresh metrics:', error);
       }
     }, refreshInterval * 1000);
 
     return () => clearInterval(interval);
-  }, [autoRefresh, refreshInterval, metrics]);
+  }, [autoRefresh, refreshInterval]);
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -317,16 +133,52 @@ export default function MonitoringPage() {
     return new Date(timestamp).toLocaleString('zh-TW');
   };
 
-  const handleRefresh = () => {
-    window.location.reload();
+  const handleRefresh = async () => {
+    setLoading(true);
+    try {
+      const [metricsData, logsData, alertsData] = await Promise.all([
+        getSystemMetrics(),
+        getSystemLogs(logFilters),
+        getAlerts()
+      ]);
+
+      setMetrics(metricsData);
+      setLogs(logsData.logs);
+      setHasMoreLogs(logsData.has_next);
+      setAlerts(alertsData);
+    } catch (error) {
+      console.error('Failed to refresh monitoring data:', error);
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const handleToggleAlert = (alertId: string) => {
-    setAlerts(prev => prev.map(alert =>
-      alert.id === alertId
-        ? { ...alert, enabled: !alert.enabled }
-        : alert
-    ));
+  const handleToggleAlert = async (alertId: string) => {
+    const alert = alerts.find(a => a.id === alertId);
+    if (!alert) return;
+
+    try {
+      const result = await toggleAlert(alertId, !alert.enabled);
+      setAlerts(prev => prev.map(a =>
+        a.id === alertId ? result.alert : a
+      ));
+    } catch (error) {
+      console.error('Failed to toggle alert:', error);
+    }
+  };
+
+  const loadMoreLogs = async () => {
+    if (!hasMoreLogs) return;
+
+    try {
+      const nextPage = (logFilters.page || 1) + 1;
+      const logsData = await getSystemLogs({ ...logFilters, page: nextPage });
+      setLogs(prev => [...prev, ...logsData.logs]);
+      setHasMoreLogs(logsData.has_next);
+      setLogFilters(prev => ({ ...prev, page: nextPage }));
+    } catch (error) {
+      console.error('Failed to load more logs:', error);
+    }
   };
 
   if (loading) {
@@ -710,11 +562,13 @@ export default function MonitoringPage() {
                 ))}
               </div>
 
-              <div className="text-center mt-6">
-                <Button variant="outline">
-                  載入更多日誌
-                </Button>
-              </div>
+              {hasMoreLogs && (
+                <div className="text-center mt-6">
+                  <Button variant="outline" onClick={loadMoreLogs}>
+                    載入更多日誌
+                  </Button>
+                </div>
+              )}
             </CardContent>
           </Card>
         </TabsContent>

@@ -25,50 +25,28 @@ import {
   XCircle,
   RefreshCw
 } from 'lucide-react';
-
-// 模擬數據接口
-interface InviteCode {
-  id: string;
-  code: string;
-  created_by: string;
-  creator_name: string;
-  created_at: string;
-  expires_at: string | null;
-  usage_limit: number | null;
-  used_count: number;
-  status: 'active' | 'expired' | 'disabled';
-  reward_inviter: number;
-  reward_invitee: number;
-  description?: string;
-}
-
-interface InviteStats {
-  total_codes: number;
-  active_codes: number;
-  total_invites: number;
-  successful_registrations: number;
-  total_rewards_given: number;
-  conversion_rate: number;
-}
-
-interface InviteActivity {
-  id: string;
-  invite_code: string;
-  inviter_name: string;
-  invitee_name: string;
-  registered_at: string;
-  reward_given: number;
-  status: 'completed' | 'pending' | 'failed';
-}
+import {
+  getInviteCodes,
+  getInviteStats,
+  getInviteActivities,
+  createInviteCode,
+  updateInviteCode,
+  deleteInviteCode,
+  type InviteCode,
+  type InviteStats,
+  type InviteActivity
+} from '@/lib/api/invites';
 
 export default function InvitesPage() {
   const [inviteCodes, setInviteCodes] = useState<InviteCode[]>([]);
   const [inviteStats, setInviteStats] = useState<InviteStats | null>(null);
   const [inviteActivities, setInviteActivities] = useState<InviteActivity[]>([]);
   const [loading, setLoading] = useState(true);
+  const [operationLoading, setOperationLoading] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
   const [showCreateModal, setShowCreateModal] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const [newInviteData, setNewInviteData] = useState({
     code: '',
     expires_at: '',
@@ -78,105 +56,33 @@ export default function InvitesPage() {
     description: ''
   });
 
-  // 模擬數據加載
+  // Load data from API
   useEffect(() => {
-    const loadData = async () => {
-      setLoading(true);
-
-      // 模擬 API 延遲
-      await new Promise(resolve => setTimeout(resolve, 1000));
-
-      const mockInviteCodes: InviteCode[] = [
-        {
-          id: '1',
-          code: 'WELCOME2024',
-          created_by: 'admin1',
-          creator_name: '管理員A',
-          created_at: '2024-01-01T00:00:00Z',
-          expires_at: '2024-12-31T23:59:59Z',
-          usage_limit: 100,
-          used_count: 45,
-          status: 'active',
-          reward_inviter: 50,
-          reward_invitee: 30,
-          description: '2024年歡迎碼'
-        },
-        {
-          id: '2',
-          code: 'FRIENDS50',
-          created_by: 'admin2',
-          creator_name: '管理員B',
-          created_at: '2024-01-15T10:00:00Z',
-          expires_at: null,
-          usage_limit: null,
-          used_count: 123,
-          status: 'active',
-          reward_inviter: 30,
-          reward_invitee: 20,
-          description: '朋友推薦碼'
-        },
-        {
-          id: '3',
-          code: 'EXPIRED2023',
-          created_by: 'admin1',
-          creator_name: '管理員A',
-          created_at: '2023-12-01T00:00:00Z',
-          expires_at: '2023-12-31T23:59:59Z',
-          usage_limit: 50,
-          used_count: 32,
-          status: 'expired',
-          reward_inviter: 40,
-          reward_invitee: 25
-        }
-      ];
-
-      const mockStats: InviteStats = {
-        total_codes: 3,
-        active_codes: 2,
-        total_invites: 200,
-        successful_registrations: 168,
-        total_rewards_given: 8400,
-        conversion_rate: 84.0
-      };
-
-      const mockActivities: InviteActivity[] = [
-        {
-          id: '1',
-          invite_code: 'WELCOME2024',
-          inviter_name: '用戶#1234',
-          invitee_name: '用戶#5678',
-          registered_at: '2024-01-20T15:30:00Z',
-          reward_given: 80,
-          status: 'completed'
-        },
-        {
-          id: '2',
-          invite_code: 'FRIENDS50',
-          inviter_name: '用戶#2345',
-          invitee_name: '用戶#6789',
-          registered_at: '2024-01-19T10:15:00Z',
-          reward_given: 50,
-          status: 'completed'
-        },
-        {
-          id: '3',
-          invite_code: 'WELCOME2024',
-          inviter_name: '用戶#3456',
-          invitee_name: '用戶#7890',
-          registered_at: '2024-01-18T14:45:00Z',
-          reward_given: 80,
-          status: 'pending'
-        }
-      ];
-
-      setInviteCodes(mockInviteCodes);
-      setInviteStats(mockStats);
-      setInviteActivities(mockActivities);
-      setLoading(false);
-    };
-
     loadData();
   }, []);
+
+  const loadData = async () => {
+    setLoading(true);
+    setError(null);
+
+    try {
+      // Load all data in parallel
+      const [codesData, statsData, activitiesData] = await Promise.all([
+        getInviteCodes(searchTerm, statusFilter),
+        getInviteStats(),
+        getInviteActivities(1, 20)
+      ]);
+
+      setInviteCodes(codesData);
+      setInviteStats(statsData);
+      setInviteActivities(activitiesData.activities || activitiesData);
+    } catch (err) {
+      console.error('Failed to load invite data:', err);
+      setError(err instanceof Error ? err.message : 'Failed to load invite data');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -220,64 +126,130 @@ export default function InvitesPage() {
 
   const handleCopyCode = (code: string) => {
     navigator.clipboard.writeText(code);
-    // 實際應該顯示 toast 通知
     alert(`邀請碼 ${code} 已複製到剪貼板`);
   };
 
   const handleCreateInvite = async () => {
-    // 實際應該調用 API
-    const newCode: InviteCode = {
-      id: Date.now().toString(),
-      code: newInviteData.code || `INVITE${Date.now()}`,
-      created_by: 'current_admin',
-      creator_name: '當前管理員',
-      created_at: new Date().toISOString(),
-      expires_at: newInviteData.expires_at || null,
-      usage_limit: newInviteData.usage_limit ? parseInt(newInviteData.usage_limit) : null,
-      used_count: 0,
-      status: 'active',
-      reward_inviter: parseInt(newInviteData.reward_inviter) || 30,
-      reward_invitee: parseInt(newInviteData.reward_invitee) || 20,
-      description: newInviteData.description
-    };
+    try {
+      setOperationLoading(true);
+      setError(null);
 
-    setInviteCodes(prev => [newCode, ...prev]);
-    setShowCreateModal(false);
-    setNewInviteData({
-      code: '',
-      expires_at: '',
-      usage_limit: '',
-      reward_inviter: '',
-      reward_invitee: '',
-      description: ''
-    });
+      const requestData = {
+        code: newInviteData.code || undefined,
+        expires_at: newInviteData.expires_at || null,
+        usage_limit: newInviteData.usage_limit ? parseInt(newInviteData.usage_limit) : null,
+        reward_inviter: newInviteData.reward_inviter ? parseInt(newInviteData.reward_inviter) : 30,
+        reward_invitee: newInviteData.reward_invitee ? parseInt(newInviteData.reward_invitee) : 20,
+        description: newInviteData.description || undefined
+      };
+
+      const result = await createInviteCode(requestData);
+
+      alert(result.message || '邀請碼建立成功');
+      setShowCreateModal(false);
+      setNewInviteData({
+        code: '',
+        expires_at: '',
+        usage_limit: '',
+        reward_inviter: '',
+        reward_invitee: '',
+        description: ''
+      });
+
+      // Reload data to get the new code
+      await loadData();
+    } catch (err) {
+      console.error('Failed to create invite code:', err);
+      setError(err instanceof Error ? err.message : 'Failed to create invite code');
+      alert(err instanceof Error ? err.message : '建立邀請碼失敗');
+    } finally {
+      setOperationLoading(false);
+    }
   };
 
-  const handleToggleStatus = (id: string) => {
-    setInviteCodes(prev => prev.map(code =>
-      code.id === id
-        ? { ...code, status: code.status === 'active' ? 'disabled' : 'active' }
-        : code
-    ));
+  const handleToggleStatus = async (id: string) => {
+    try {
+      setOperationLoading(true);
+      const code = inviteCodes.find(c => c.id === id);
+      if (!code) return;
+
+      const newStatus = code.status === 'active' ? 'disabled' : 'active';
+
+      await updateInviteCode(id, { status: newStatus });
+
+      // Update local state
+      setInviteCodes(prev => prev.map(c =>
+        c.id === id ? { ...c, status: newStatus } : c
+      ));
+
+      alert('邀請碼狀態已更新');
+    } catch (err) {
+      console.error('Failed to toggle invite code status:', err);
+      alert(err instanceof Error ? err.message : '更新邀請碼狀態失敗');
+    } finally {
+      setOperationLoading(false);
+    }
   };
 
-  const handleDeleteCode = (id: string) => {
+  const handleDeleteCode = async (id: string) => {
     if (!confirm('確定要刪除這個邀請碼嗎？')) return;
-    setInviteCodes(prev => prev.filter(code => code.id !== id));
+
+    try {
+      setOperationLoading(true);
+      await deleteInviteCode(id);
+
+      // Update local state
+      setInviteCodes(prev => prev.filter(code => code.id !== id));
+
+      alert('邀請碼已刪除');
+
+      // Reload stats
+      const statsData = await getInviteStats();
+      setInviteStats(statsData);
+    } catch (err) {
+      console.error('Failed to delete invite code:', err);
+      alert(err instanceof Error ? err.message : '刪除邀請碼失敗');
+    } finally {
+      setOperationLoading(false);
+    }
   };
 
-  const filteredCodes = inviteCodes.filter(code => {
-    const matchesSearch = !searchTerm ||
-      code.code.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      code.creator_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      (code.description && code.description.toLowerCase().includes(searchTerm.toLowerCase()));
+  // Apply search and filter with API calls
+  const handleSearch = async () => {
+    setLoading(true);
+    setError(null);
 
-    const matchesStatus = !statusFilter || code.status === statusFilter;
+    try {
+      const codesData = await getInviteCodes(searchTerm, statusFilter);
+      setInviteCodes(codesData);
+    } catch (err) {
+      console.error('Failed to search invite codes:', err);
+      setError(err instanceof Error ? err.message : 'Failed to search invite codes');
+    } finally {
+      setLoading(false);
+    }
+  };
 
-    return matchesSearch && matchesStatus;
-  });
+  const handleResetFilters = async () => {
+    setSearchTerm('');
+    setStatusFilter('');
+    setLoading(true);
+    setError(null);
 
-  if (loading) {
+    try {
+      const codesData = await getInviteCodes();
+      setInviteCodes(codesData);
+    } catch (err) {
+      console.error('Failed to load invite codes:', err);
+      setError(err instanceof Error ? err.message : 'Failed to load invite codes');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const filteredCodes = inviteCodes;
+
+  if (loading && !inviteCodes.length) {
     return (
       <div className="flex items-center justify-center h-96">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
@@ -292,11 +264,22 @@ export default function InvitesPage() {
           <h1 className="text-3xl font-bold text-[var(--foreground)]">邀請系統</h1>
           <p className="text-[var(--text-secondary)] mt-2">管理邀請碼和獎勵</p>
         </div>
-        <Button onClick={() => setShowCreateModal(true)}>
+        <Button onClick={() => setShowCreateModal(true)} disabled={loading || operationLoading}>
           <Plus className="h-4 w-4 mr-2" />
           建立邀請碼
         </Button>
       </div>
+
+      {error && (
+        <Card className="border-red-200 bg-red-50">
+          <CardContent className="p-4">
+            <div className="flex items-center gap-2 text-red-800">
+              <XCircle className="h-5 w-5" />
+              <p>{error}</p>
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {/* 統計卡片 */}
       {inviteStats && (
@@ -413,6 +396,11 @@ export default function InvitesPage() {
                       placeholder="邀請碼、建立者或描述"
                       value={searchTerm}
                       onChange={(e) => setSearchTerm(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') {
+                          handleSearch();
+                        }
+                      }}
                       className="pl-10"
                     />
                   </div>
@@ -424,7 +412,9 @@ export default function InvitesPage() {
                     id="status"
                     className="mt-1 block w-full px-3 py-2 border border-[var(--border)] rounded-md bg-[var(--surface)] text-[var(--foreground)]"
                     value={statusFilter}
-                    onChange={(e) => setStatusFilter(e.target.value)}
+                    onChange={(e) => {
+                      setStatusFilter(e.target.value);
+                    }}
                   >
                     <option value="">全部狀態</option>
                     <option value="active">啟用中</option>
@@ -433,16 +423,17 @@ export default function InvitesPage() {
                   </select>
                 </div>
 
-                <div className="flex items-end">
+                <div className="flex items-end gap-2">
+                  <Button onClick={handleSearch}>
+                    <Search className="h-4 w-4 mr-2" />
+                    搜尋
+                  </Button>
                   <Button
                     variant="outline"
-                    onClick={() => {
-                      setSearchTerm('');
-                      setStatusFilter('');
-                    }}
+                    onClick={handleResetFilters}
                   >
                     <RefreshCw className="h-4 w-4 mr-2" />
-                    重設篩選
+                    重設
                   </Button>
                 </div>
               </div>
@@ -516,6 +507,7 @@ export default function InvitesPage() {
                         variant="outline"
                         size="sm"
                         onClick={() => handleToggleStatus(code.id)}
+                        disabled={operationLoading}
                         className={code.status === 'active' ? 'text-red-600 border-red-600' : 'text-green-600 border-green-600'}
                       >
                         {code.status === 'active' ? (
@@ -535,6 +527,7 @@ export default function InvitesPage() {
                         variant="outline"
                         size="sm"
                         onClick={() => handleDeleteCode(code.id)}
+                        disabled={operationLoading}
                         className="text-red-600 border-red-600 hover:bg-red-50"
                       >
                         <Trash2 className="h-4 w-4" />
@@ -682,11 +675,12 @@ export default function InvitesPage() {
                 <Button
                   variant="outline"
                   onClick={() => setShowCreateModal(false)}
+                  disabled={operationLoading}
                 >
                   取消
                 </Button>
-                <Button onClick={handleCreateInvite}>
-                  建立邀請碼
+                <Button onClick={handleCreateInvite} disabled={operationLoading}>
+                  {operationLoading ? '建立中...' : '建立邀請碼'}
                 </Button>
               </div>
             </CardContent>
