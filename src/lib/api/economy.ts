@@ -1,6 +1,5 @@
 import { getAuthHeaders } from './auth';
-
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+import { buildApiUrl } from './client';
 
 export interface EconomyConfig {
   ai_analysis_pricing: Record<string, {
@@ -30,7 +29,7 @@ export interface EconomyConfig {
 }
 
 export async function getEconomyConfig() {
-  const response = await fetch(`${API_URL}/api/v1/admin/economy/config`, {
+  const response = await fetch(buildApiUrl('/api/v1/admin/economy/config'), {
     headers: getAuthHeaders(),
   });
 
@@ -42,7 +41,7 @@ export async function getEconomyConfig() {
 }
 
 export async function updateEconomyConfig(config: Partial<EconomyConfig>) {
-  const response = await fetch(`${API_URL}/api/v1/admin/economy/config`, {
+  const response = await fetch(buildApiUrl('/api/v1/admin/economy/config'), {
     method: 'PUT',
     headers: {
       ...getAuthHeaders(),
@@ -59,7 +58,7 @@ export async function updateEconomyConfig(config: Partial<EconomyConfig>) {
 }
 
 export async function resetEconomyConfig() {
-  const response = await fetch(`${API_URL}/api/v1/admin/economy/config/reset`, {
+  const response = await fetch(buildApiUrl('/api/v1/admin/economy/config/reset'), {
     method: 'POST',
     headers: getAuthHeaders(),
   });
@@ -77,7 +76,7 @@ export async function previewPricingChanges(model: string, newPrice: number) {
     new_price: newPrice.toString(),
   });
 
-  const response = await fetch(`${API_URL}/api/v1/admin/economy/pricing-preview?${params}`, {
+  const response = await fetch(buildApiUrl(`/api/v1/admin/economy/pricing-preview?${params}`), {
     headers: getAuthHeaders(),
   });
 

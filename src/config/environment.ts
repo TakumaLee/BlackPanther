@@ -106,8 +106,12 @@ function createEnvironmentConfig(): EnvironmentConfig {
     isQA: env === 'qa',
     isProduction: env === 'production',
 
-    // API configuration - fallback to QA if not set
-    apiUrl: process.env.NEXT_PUBLIC_API_URL || 'https://black-alligator-qa-646040465533.asia-east1.run.app',
+    // API configuration
+    // In development, use relative path to leverage Next.js proxy (next.config.ts rewrites)
+    // This avoids CORS issues when testing with remote backends
+    apiUrl: env === 'development'
+      ? '' // Use relative path in dev (proxied via next.config.ts)
+      : (process.env.NEXT_PUBLIC_API_URL || 'https://black-alligator-qa-646040465533.asia-east1.run.app'),
 
     // Supabase configuration (optional - only if variables are provided)
     ...(process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ? {

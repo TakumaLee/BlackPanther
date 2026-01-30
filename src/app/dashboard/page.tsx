@@ -21,7 +21,8 @@ import {
   UserCheck,
   Monitor,
   Bot,
-  Coins
+  Coins,
+  Flag
 } from 'lucide-react'
 import { FeatureCard } from '@/components/dashboard/FeatureCard'
 
@@ -268,6 +269,13 @@ export default function DashboardPage() {
                   stats={stats ? `${stats.total_articles.toLocaleString()} 總文章` : undefined}
                 />
                 <FeatureCard
+                  title="檢舉管理"
+                  description="審核和處理用戶提交的內容檢舉"
+                  icon={Flag}
+                  href="/dashboard/reports"
+                  color="red"
+                />
+                <FeatureCard
                   title="數據分析"
                   description="查看詳細的用戶行為和業務分析"
                   icon={BarChart3}
@@ -311,7 +319,11 @@ export default function DashboardPage() {
               <h3 className="text-lg font-medium text-gray-900 mb-4">
                 快速操作
               </h3>
-              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-5">
+                <Link href="/dashboard/reports" className="flex items-center justify-center px-4 py-3 border border-red-300 rounded-lg text-sm font-medium text-red-700 bg-red-50 hover:bg-red-100 transition-colors">
+                  <Flag className="h-4 w-4 mr-2" />
+                  檢舉處理
+                </Link>
                 <Link href="/dashboard/reviews" className="flex items-center justify-center px-4 py-3 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors">
                   <Eye className="h-4 w-4 mr-2" />
                   查看待審核

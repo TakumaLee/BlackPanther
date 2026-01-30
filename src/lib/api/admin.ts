@@ -3,6 +3,7 @@
 
 import { config, logger } from '@/config/environment';
 import { authService } from '../auth/auth-service';
+import { buildApiUrl } from './client';
 import {
   DashboardStats,
   UserGrowthData,
@@ -30,10 +31,16 @@ import {
   ReviewStatistics,
   BlockStatistics,
   UserArticlesResponse,
-  UserTransactionsResponse
+  UserTransactionsResponse,
+  // Moderation types
+  ModerationQueueResponse,
+  ModerationQueueFilters,
+  ModerationAssignment,
+  ModerationResolution,
+  ModerationEscalation,
+  ModerationStats,
+  ContentReport
 } from '@/types/admin';
-
-const API_BASE_URL = config.apiUrl;
 
 class AdminApiClient {
   private async makeRequest<T>(
@@ -46,7 +53,7 @@ class AdminApiClient {
       throw new Error('管理員未登入');
     }
 
-    const url = `${API_BASE_URL}/api/v1/admin${endpoint}`;
+    const url = buildApiUrl(`/api/v1/admin${endpoint}`);
     const requestConfig: RequestInit = {
       headers: {
         'Content-Type': 'application/json',
@@ -115,10 +122,61 @@ class AdminApiClient {
     }
   }
 
+  // Make request to non-admin API paths (e.g., /api/v1/moderation)
+  private async makeModerationRequest<T>(
+    endpoint: string,
+    options: RequestInit = {}
+  ): Promise<T> {
+    const authHeader = authService.getAuthHeader();
+    if (!authHeader) {
+      logger.warn('Moderation API request attempted without authentication');
+      throw new Error('管理員未登入');
+    }
+
+    const url = buildApiUrl(`/api/v1/moderation${endpoint}`);
+    const requestConfig: RequestInit = {
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': authHeader,
+        ...options.headers,
+      },
+      ...options,
+    };
+
+    logger.debug('Making Moderation API request:', { url, method: options.method || 'GET' });
+
+    try {
+      const response = await fetch(url, requestConfig);
+
+      if (!response.ok) {
+        let errorMessage = `HTTP ${response.status}`;
+        try {
+          const errorData = await response.json();
+          errorMessage = errorData.detail || errorData.message || errorMessage;
+        } catch {
+          // Ignore JSON parse error
+        }
+        const error = new Error(errorMessage) as Error & { status?: number };
+        error.status = response.status;
+        logger.error('Moderation API request failed:', { url, status: response.status, errorMessage });
+        throw error;
+      }
+
+      logger.debug('Moderation API request successful:', { url, status: response.status });
+      return await response.json();
+    } catch (err) {
+      if (err instanceof Error) {
+        logger.error('Moderation API request error:', { url, error: err.message });
+        throw err;
+      }
+      throw new Error('API請求失敗');
+    }
+  }
+
   // Dashboard APIs
   async getDashboardStats(): Promise<DashboardStats> {
     try {
-      return await this.makeRequest<DashboardStats>('/stats');
+      return await this.makeRequest<DashboardStats>('/dashboard/stats');
     } catch (err) {
       // Provide fallback data for dashboard stats
       console.warn('Dashboard stats API failed, returning fallback data:', err);
@@ -140,15 +198,15 @@ class AdminApiClient {
   }
 
   async getUserGrowthStats(days: number = 30): Promise<UserGrowthData[]> {
-    return this.makeRequest<UserGrowthData[]>(`/stats/user-growth?days=${days}`);
+    return this.makeRequest<UserGrowthData[]>(`/dashboard/stats/user-growth?days=${days}`);
   }
 
   async getArticleStats(days: number = 30): Promise<ArticleStatsData[]> {
-    return this.makeRequest<ArticleStatsData[]>(`/stats/articles?days=${days}`);
+    return this.makeRequest<ArticleStatsData[]>(`/dashboard/stats/articles?days=${days}`);
   }
 
   async getRevenueStats(days: number = 30): Promise<RevenueData[]> {
-    return this.makeRequest<RevenueData[]>(`/stats/revenue?days=${days}`);
+    return this.makeRequest<RevenueData[]>(`/dashboard/stats/revenue?days=${days}`);
   }
 
   // User Management APIs
@@ -163,7 +221,7 @@ class AdminApiClient {
     if (filters.fraud_score_min !== undefined) params.append('fraud_score_min', filters.fraud_score_min.toString());
 
     const query = params.toString();
-    return this.makeRequest<UserList>(`/users${query ? `?${query}` : ''}`);
+    return this.makeRequest<UserList>(`/users/${query ? `?${query}` : ''}`);
   }
 
   async getUserDetail(userId: string): Promise<UserDetail> {
@@ -341,6 +399,60 @@ class AdminApiClient {
     return this.makeRequest(`/stats/export?start_date=${startDate}&end_date=${endDate}&format=${format}`);
   }
 
+  // Demographics and Topics APIs
+  async getUserDemographics(): Promise<{
+    by_provider: Record<string, number>;
+    by_country: Record<string, number>;
+    by_platform: Record<string, number>;
+  }> {
+    try {
+      return await this.makeRequest('/stats/demographics');
+    } catch (err) {
+      console.warn('User demographics API failed, returning fallback data:', err);
+      return {
+        by_provider: {},
+        by_country: {},
+        by_platform: {}
+      };
+    }
+  }
+
+  async getContentTopics(): Promise<{
+    popular_topics: Array<{ topic: string; count: number }>;
+    sentiment_distribution: Record<string, number>;
+  }> {
+    try {
+      return await this.makeRequest('/stats/topics');
+    } catch (err) {
+      console.warn('Content topics API failed, returning fallback data:', err);
+      return {
+        popular_topics: [],
+        sentiment_distribution: {}
+      };
+    }
+  }
+
+  async getAIUsageStats(): Promise<{
+    total_analyses: number;
+    analyses_today: number;
+    analyses_week: number;
+    by_model: Array<{ model: string; usage_count: number; revenue: number }>;
+    avg_analysis_time: number;
+  }> {
+    try {
+      return await this.makeRequest('/stats/ai-usage');
+    } catch (err) {
+      console.warn('AI usage stats API failed, returning fallback data:', err);
+      return {
+        total_analyses: 0,
+        analyses_today: 0,
+        analyses_week: 0,
+        by_model: [],
+        avg_analysis_time: 0
+      };
+    }
+  }
+
   // Review Management APIs
   async getReviews(filters: ReviewFilters = {}): Promise<ReviewList> {
     const params = new URLSearchParams();
@@ -352,7 +464,7 @@ class AdminApiClient {
 
     const query = params.toString();
     try {
-      return await this.makeRequest<ReviewList>(`/invite-reviews${query ? `?${query}` : ''}`);
+      return await this.makeRequest<ReviewList>(`/reviews${query ? `?${query}` : ''}`);
     } catch (err) {
       // Provide fallback data for reviews
       console.warn('Reviews API failed, returning fallback data:', err);
@@ -367,22 +479,22 @@ class AdminApiClient {
   }
 
   async getReview(reviewId: string): Promise<ReviewDetail> {
-    return this.makeRequest(`/invite-reviews/${reviewId}`);
+    return this.makeRequest(`/reviews/${reviewId}`);
   }
 
   async reviewRequest(reviewId: string, action: ReviewActionRequest): Promise<{ message: string }> {
     const endpoint = action.action === 'approve' ? 'approve' : 'reject';
-    return this.makeRequest(`/invite-reviews/${reviewId}/${endpoint}`, {
+    return this.makeRequest(`/reviews/${reviewId}/${endpoint}`, {
       method: 'POST',
       body: JSON.stringify(action),
     });
   }
 
   async getReviewStatistics(): Promise<ReviewStatistics> {
-    return this.makeRequest('/invite-reviews/statistics');
+    return this.makeRequest('/reviews/statistics');
   }
 
-  // Content Management APIs (using general article API for now)
+  // Content Management APIs (admin article endpoints)
   async getArticles(filters: {
     page?: number;
     limit?: number;
@@ -404,28 +516,17 @@ class AdminApiClient {
     if (filters.filter) params.append('filter', filters.filter);
 
     const query = params.toString();
-    const url = `${API_BASE_URL}/api/v1/articles${query ? `?${query}` : ''}`;
 
     try {
-      const response = await fetch(url, {
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': authService.getAuthHeader() || '',
-        },
-      });
+      const data = await this.makeRequest<{
+        articles: Array<Record<string, unknown>>;
+        total: number;
+        page: number;
+        limit: number;
+        has_next: boolean;
+      }>(`/articles${query ? `?${query}` : ''}`);
 
-      if (!response.ok) {
-        throw new Error(`HTTP ${response.status}`);
-      }
-
-      const data = await response.json();
-      return {
-        articles: data.articles || [],
-        total: data.total || 0,
-        page: data.page || 1,
-        limit: data.limit || 20,
-        has_next: data.has_next || false
-      };
+      return data;
     } catch (err) {
       console.warn('Articles API failed, returning fallback data:', err);
       return {
@@ -439,24 +540,7 @@ class AdminApiClient {
   }
 
   async getArticleDetail(articleId: string): Promise<Record<string, unknown>> {
-    const url = `${API_BASE_URL}/api/v1/articles/${articleId}`;
-
-    try {
-      const response = await fetch(url, {
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': authService.getAuthHeader() || '',
-        },
-      });
-
-      if (!response.ok) {
-        throw new Error(`HTTP ${response.status}`);
-      }
-
-      return await response.json();
-    } catch (err) {
-      throw new Error('Failed to fetch article detail');
-    }
+    return this.makeRequest(`/articles/${articleId}`);
   }
 
   // Admin Article Management APIs
@@ -527,6 +611,99 @@ class AdminApiClient {
 
   async previewPricingChanges(model: string, newPrice: number): Promise<Record<string, unknown>> {
     return this.makeRequest(`/economy/pricing-preview?model=${model}&new_price=${newPrice}`);
+  }
+
+  // ============================================
+  // Moderation / Content Reports APIs
+  // ============================================
+
+  /**
+   * Get moderation queue with filters
+   */
+  async getModerationQueue(filters: ModerationQueueFilters = {}): Promise<ModerationQueueResponse> {
+    const params = new URLSearchParams();
+
+    if (filters.priority_min !== undefined) params.append('priority_min', filters.priority_min.toString());
+    if (filters.status && filters.status !== 'all') params.append('status', filters.status);
+    if (filters.assigned_to_me !== undefined) params.append('assigned_to_me', filters.assigned_to_me.toString());
+    if (filters.page) params.append('page', filters.page.toString());
+    if (filters.limit) params.append('limit', filters.limit.toString());
+
+    const query = params.toString();
+    try {
+      return await this.makeModerationRequest<ModerationQueueResponse>(`/queue${query ? `?${query}` : ''}`);
+    } catch (err) {
+      console.warn('Moderation queue API failed, returning fallback data:', err);
+      return {
+        items: [],
+        total: 0,
+        page: filters.page || 1,
+        limit: filters.limit || 20,
+        has_next: false
+      };
+    }
+  }
+
+  /**
+   * Get moderation statistics
+   */
+  async getModerationStats(): Promise<ModerationStats> {
+    try {
+      return await this.makeModerationRequest<ModerationStats>('/stats');
+    } catch (err) {
+      console.warn('Moderation stats API failed, returning fallback data:', err);
+      return {
+        pending_count: 0,
+        average_resolution_time_hours: 0,
+        sla_compliance_rate: 0,
+        escalation_count_24h: 0,
+        moderator_performance: []
+      };
+    }
+  }
+
+  /**
+   * Assign a report to a moderator
+   */
+  async assignReport(assignment: ModerationAssignment): Promise<{ message: string; report: ContentReport }> {
+    return this.makeModerationRequest('/assign', {
+      method: 'POST',
+      body: JSON.stringify(assignment),
+    });
+  }
+
+  /**
+   * Resolve a moderation report
+   */
+  async resolveReport(resolution: ModerationResolution): Promise<{ message: string; report: ContentReport }> {
+    return this.makeModerationRequest('/resolve', {
+      method: 'POST',
+      body: JSON.stringify(resolution),
+    });
+  }
+
+  /**
+   * Escalate a report
+   */
+  async escalateReport(escalation: ModerationEscalation): Promise<{ message: string; report: ContentReport }> {
+    return this.makeModerationRequest('/escalate', {
+      method: 'POST',
+      body: JSON.stringify(escalation),
+    });
+  }
+
+  /**
+   * Create a content report (for testing purposes)
+   */
+  async createReport(data: {
+    article_id?: string;
+    report_type: string;
+    description?: string;
+  }): Promise<{ message: string; report: ContentReport }> {
+    return this.makeModerationRequest('/reports', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
   }
 }
 

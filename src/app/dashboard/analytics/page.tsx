@@ -99,7 +99,10 @@ export default function AnalyticsPage() {
         , // fraudAnalytics - not used
         userGrowthData,
         articleStats,
-        revenueStats
+        revenueStats,
+        userDemographics,
+        contentTopics,
+        aiUsageStats
       ] = await Promise.all([
         adminApi.getDashboardStats(),
         adminApi.getUserAnalytics(),
@@ -108,7 +111,10 @@ export default function AnalyticsPage() {
         adminApi.getFraudAnalytics(),
         adminApi.getUserGrowthStats(selectedPeriod === '7d' ? 7 : selectedPeriod === '30d' ? 30 : 90),
         adminApi.getArticleStats(selectedPeriod === '7d' ? 7 : selectedPeriod === '30d' ? 30 : 90),
-        adminApi.getRevenueStats(selectedPeriod === '7d' ? 7 : selectedPeriod === '30d' ? 30 : 90)
+        adminApi.getRevenueStats(selectedPeriod === '7d' ? 7 : selectedPeriod === '30d' ? 30 : 90),
+        adminApi.getUserDemographics(),
+        adminApi.getContentTopics(),
+        adminApi.getAIUsageStats()
       ]);
 
       // 組合數據為頁面需要的格式
@@ -135,37 +141,13 @@ export default function AnalyticsPage() {
           active_users: userGrowthData.find(u => u.date === stat.date)?.active_users || 0
         })),
         user_demographics: {
-          by_provider: {
-            'Google': Math.floor(dashboardStats.total_users * 0.5),
-            'Apple': Math.floor(dashboardStats.total_users * 0.3),
-            '匿名': Math.floor(dashboardStats.total_users * 0.2)
-          },
-          by_country: {
-            '台灣': Math.floor(dashboardStats.total_users * 0.45),
-            '日本': Math.floor(dashboardStats.total_users * 0.25),
-            '韓國': Math.floor(dashboardStats.total_users * 0.2),
-            '其他': Math.floor(dashboardStats.total_users * 0.1)
-          },
-          by_age_group: {
-            '18-25': Math.floor(dashboardStats.total_users * 0.35),
-            '26-35': Math.floor(dashboardStats.total_users * 0.4),
-            '36-45': Math.floor(dashboardStats.total_users * 0.2),
-            '45+': Math.floor(dashboardStats.total_users * 0.05)
-          }
+          by_provider: userDemographics.by_provider || {},
+          by_country: userDemographics.by_country || {},
+          by_age_group: userDemographics.by_platform || {} // 使用 platform 作為替代
         },
         content_analytics: {
-          sentiment_distribution: {
-            '正面': Math.floor(contentAnalytics.total_articles * 0.1),
-            '中性': Math.floor(contentAnalytics.total_articles * 0.25),
-            '負面': Math.floor(contentAnalytics.total_articles * 0.65)
-          },
-          popular_topics: [
-            { topic: '工作壓力', count: Math.floor(contentAnalytics.total_articles * 0.15) },
-            { topic: '人際關係', count: Math.floor(contentAnalytics.total_articles * 0.12) },
-            { topic: '心理健康', count: Math.floor(contentAnalytics.total_articles * 0.1) },
-            { topic: '生活困擾', count: Math.floor(contentAnalytics.total_articles * 0.08) },
-            { topic: '情感支持', count: Math.floor(contentAnalytics.total_articles * 0.06) }
-          ],
+          sentiment_distribution: contentTopics.sentiment_distribution || {},
+          popular_topics: contentTopics.popular_topics || [],
           engagement_metrics: {
             avg_reactions_per_article: contentAnalytics.total_reactions / Math.max(contentAnalytics.total_articles, 1),
             avg_comments_per_article: contentAnalytics.total_comments / Math.max(contentAnalytics.total_articles, 1),
@@ -178,16 +160,11 @@ export default function AnalyticsPage() {
             sales: product.count || 0,
             revenue: product.revenue || 0
           })),
-          ai_usage: [
-            { model: 'GPT-4o-mini', usage_count: Math.floor(dashboardStats.total_coins_spent * 0.4), revenue: Math.floor(dashboardStats.total_coins_spent * 0.4 * 1) },
-            { model: 'GPT-4o', usage_count: Math.floor(dashboardStats.total_coins_spent * 0.3), revenue: Math.floor(dashboardStats.total_coins_spent * 0.3 * 8) },
-            { model: 'Claude-3', usage_count: Math.floor(dashboardStats.total_coins_spent * 0.2), revenue: Math.floor(dashboardStats.total_coins_spent * 0.2 * 12) },
-            { model: 'Multi-model', usage_count: Math.floor(dashboardStats.total_coins_spent * 0.1), revenue: Math.floor(dashboardStats.total_coins_spent * 0.1 * 20) }
-          ],
+          ai_usage: aiUsageStats.by_model || [],
           subscription_metrics: {
-            active_subscribers: Math.floor(dashboardStats.total_users * 0.05), // 假設 5% 用戶是訂閱用戶
+            active_subscribers: aiUsageStats.total_analyses,
             monthly_revenue: revenueAnalytics.revenue_month,
-            churn_rate: 5.8
+            churn_rate: 0 // 需要實際追蹤
           }
         }
       };
@@ -502,21 +479,23 @@ export default function AnalyticsPage() {
               </CardContent>
             </Card>
 
-            {/* 年齡分布 */}
+            {/* 平台分布 */}
             <Card className="border-[var(--border)] bg-[var(--surface)] lg:col-span-2">
               <CardHeader>
-                <CardTitle>年齡分布</CardTitle>
+                <CardTitle>平台分布</CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                  {Object.entries(data.user_demographics.by_age_group).map(([ageGroup, count]) => {
-                    const percentage = ((count / data.overview.total_users) * 100).toFixed(1);
+                  {Object.entries(data.user_demographics.by_age_group).map(([platform, count]) => {
+                    const percentage = data.overview.total_users > 0
+                      ? ((count / data.overview.total_users) * 100).toFixed(1)
+                      : '0.0';
                     return (
-                      <div key={ageGroup} className="text-center">
+                      <div key={platform} className="text-center">
                         <div className="text-2xl font-bold text-[var(--foreground)]">
                           {count.toLocaleString()}
                         </div>
-                        <div className="text-sm text-[var(--text-secondary)]">{ageGroup} 歲</div>
+                        <div className="text-sm text-[var(--text-secondary)]">{platform}</div>
                         <div className="text-xs text-[var(--text-muted)]">{percentage}%</div>
                       </div>
                     );

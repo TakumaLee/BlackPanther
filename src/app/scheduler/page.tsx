@@ -9,6 +9,8 @@ import {
   RefreshCw,
   Settings,
   Play,
+  AlertTriangle,
+  AlertCircle,
 } from 'lucide-react'
 import TaskCard from '@/components/scheduler/TaskCard'
 import ExecutionHistory from '@/components/scheduler/ExecutionHistory'
@@ -21,6 +23,7 @@ import {
   TaskExecution,
   ExecutionHistoryFilters,
 } from '@/types/scheduler'
+import { parseAPIError, getErrorBgColor, formatErrorForLog, type APIError } from '@/lib/utils/api-error'
 
 type TabType = 'overview' | 'tasks' | 'history' | 'monitoring'
 
@@ -29,12 +32,20 @@ export default function SchedulerPage() {
   const [dashboardData, setDashboardData] = useState<DashboardData | null>(null)
   const [executions, setExecutions] = useState<TaskExecution[]>([])
   const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
+  const [error, setError] = useState<APIError | null>(null)
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null)
   const [executionFilters, setExecutionFilters] = useState<ExecutionHistoryFilters>({})
   const [statisticsTimeRange, setStatisticsTimeRange] = useState<'24h' | '7d' | '30d'>('24h')
+  const [isMockData, setIsMockData] = useState(false)
 
   const api = getSchedulerAPI()
+
+  // Check if using mock data
+  useEffect(() => {
+    const useMockData = process.env.NEXT_PUBLIC_ENABLE_MOCK_DATA === 'true' &&
+                        process.env.NEXT_PUBLIC_APP_ENV === 'development'
+    setIsMockData(useMockData)
+  }, [])
 
   // WebSocket connection for real-time updates (disabled until backend implements it)
   const wsUrl = createWebSocketUrl(process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000')
@@ -75,8 +86,9 @@ export default function SchedulerPage() {
       setDashboardData(data)
       setLastUpdated(new Date())
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to load dashboard data')
-      console.error('Failed to load dashboard:', err)
+      const apiError = parseAPIError(err)
+      console.error(formatErrorForLog(apiError))
+      setError(apiError)
     } finally {
       setLoading(false)
     }
@@ -173,19 +185,64 @@ export default function SchedulerPage() {
   ]
 
   if (error) {
+    const errorBgClass = getErrorBgColor(error.type)
+
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-8 max-w-md w-full mx-4">
-          <div className="text-center">
-            <div className="text-red-500 text-5xl mb-4">⚠️</div>
-            <h2 className="text-xl font-semibold text-gray-900 mb-2">載入失敗</h2>
-            <p className="text-gray-600 mb-4">{error}</p>
-            <button
-              onClick={loadDashboardData}
-              className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
-            >
-              重試
-            </button>
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center p-6">
+        <div className={`rounded-lg shadow-sm border p-8 max-w-2xl w-full ${errorBgClass}`}>
+          <div className="flex items-start gap-4">
+            <AlertCircle className="h-8 w-8 flex-shrink-0 mt-0.5" />
+            <div className="flex-1">
+              <h2 className="text-xl font-semibold mb-2">無法載入調度器資料</h2>
+              <p className="font-medium mb-2">{error.userMessage}</p>
+
+              {/* Technical details for developers */}
+              {process.env.NEXT_PUBLIC_APP_ENV === 'development' && (
+                <details className="mt-4">
+                  <summary className="cursor-pointer text-sm opacity-80 hover:opacity-100">
+                    技術細節
+                  </summary>
+                  <div className="mt-2 p-4 bg-white bg-opacity-50 rounded text-sm font-mono">
+                    <div><strong>錯誤類型：</strong> {error.type}</div>
+                    <div className="mt-1"><strong>訊息：</strong> {error.message}</div>
+                    {error.statusCode && (
+                      <div className="mt-1"><strong>狀態碼：</strong> {error.statusCode}</div>
+                    )}
+                  </div>
+                </details>
+              )}
+
+              {/* Action buttons */}
+              <div className="flex gap-3 mt-6">
+                {error.canRetry && (
+                  <button
+                    onClick={loadDashboardData}
+                    className="flex items-center px-4 py-2 bg-white hover:bg-gray-50 border border-gray-300 rounded-md font-medium"
+                  >
+                    <RefreshCw className="h-4 w-4 mr-2" />
+                    重試
+                  </button>
+                )}
+
+                {error.type === 'unauthorized' && (
+                  <button
+                    onClick={() => window.location.href = '/login'}
+                    className="px-4 py-2 bg-white hover:bg-gray-50 border border-gray-300 rounded-md font-medium"
+                  >
+                    重新登入
+                  </button>
+                )}
+
+                {(error.type === 'cors' || error.type === 'not_found') && (
+                  <button
+                    onClick={() => window.open('https://github.com/your-repo/issues', '_blank')}
+                    className="px-4 py-2 bg-white hover:bg-gray-50 border border-gray-300 rounded-md font-medium"
+                  >
+                    回報問題
+                  </button>
+                )}
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -195,6 +252,22 @@ export default function SchedulerPage() {
   return (
     <div className="min-h-screen bg-gray-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {/* Mock Data Warning Banner */}
+        {isMockData && (
+          <div className="bg-yellow-100 border-l-4 border-yellow-500 text-yellow-700 p-4 rounded mb-8">
+            <div className="flex items-start gap-3">
+              <AlertTriangle className="h-5 w-5 flex-shrink-0 mt-0.5" />
+              <div>
+                <p className="font-bold">⚠️ 警告：使用模擬資料</p>
+                <p className="text-sm mt-1">API 不可用，正在顯示開發用的範例資料。</p>
+                <p className="text-xs mt-1 opacity-80">
+                  環境變數：NEXT_PUBLIC_ENABLE_MOCK_DATA=true
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Header */}
         <div className="mb-8">
           <div className="flex items-center justify-between">

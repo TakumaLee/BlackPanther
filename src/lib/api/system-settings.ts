@@ -4,8 +4,7 @@
  */
 
 import { getAuthHeaders } from './auth';
-
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+import { buildApiUrl } from './client';
 
 // Type definitions matching backend schemas
 export interface SystemSettings {
@@ -64,7 +63,7 @@ export interface SystemSettings {
  * Get system settings
  */
 export async function getSystemSettings(): Promise<SystemSettings> {
-  const response = await fetch(`${API_URL}/api/v1/admin/settings`, {
+  const response = await fetch(buildApiUrl('/api/v1/admin/settings'), {
     method: 'GET',
     headers: getAuthHeaders(),
   });
@@ -85,7 +84,7 @@ export async function updateSystemSettings(settings: Partial<SystemSettings>): P
   message: string;
   settings: SystemSettings;
 }> {
-  const response = await fetch(`${API_URL}/api/v1/admin/settings`, {
+  const response = await fetch(buildApiUrl('/api/v1/admin/settings'), {
     method: 'PUT',
     headers: getAuthHeaders(),
     body: JSON.stringify(settings),
@@ -107,7 +106,7 @@ export async function resetSystemSettings(): Promise<{
   message: string;
   settings: SystemSettings;
 }> {
-  const response = await fetch(`${API_URL}/api/v1/admin/settings/reset`, {
+  const response = await fetch(buildApiUrl('/api/v1/admin/settings/reset'), {
     method: 'POST',
     headers: getAuthHeaders(),
   });
@@ -127,7 +126,7 @@ export async function sendTestEmail(): Promise<{
   success: boolean;
   message: string;
 }> {
-  const response = await fetch(`${API_URL}/api/v1/admin/settings/test-email`, {
+  const response = await fetch(buildApiUrl('/api/v1/admin/settings/test-email'), {
     method: 'POST',
     headers: getAuthHeaders(),
   });
@@ -148,7 +147,7 @@ export async function backupDatabase(): Promise<{
   message: string;
   backup_file?: string;
 }> {
-  const response = await fetch(`${API_URL}/api/v1/admin/settings/backup`, {
+  const response = await fetch(buildApiUrl('/api/v1/admin/settings/backup'), {
     method: 'POST',
     headers: getAuthHeaders(),
   });

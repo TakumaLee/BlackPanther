@@ -4,8 +4,7 @@
  */
 
 import { getAuthHeaders } from './auth';
-
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+import { buildApiUrl } from './client';
 
 // Type definitions matching backend schemas
 export interface SystemMetrics {
@@ -86,7 +85,7 @@ export interface CreateAlertRequest {
  * Get system metrics
  */
 export async function getSystemMetrics(): Promise<SystemMetrics> {
-  const response = await fetch(`${API_URL}/api/v1/admin/monitoring/metrics`, {
+  const response = await fetch(buildApiUrl('/api/v1/admin/monitoring/metrics'), {
     method: 'GET',
     headers: getAuthHeaders(),
   });
@@ -113,7 +112,7 @@ export async function getSystemLogs(filters: LogFilters = {}): Promise<LogsRespo
   if (filters.limit) params.append('limit', filters.limit.toString());
 
   const query = params.toString();
-  const response = await fetch(`${API_URL}/api/v1/admin/monitoring/logs${query ? `?${query}` : ''}`, {
+  const response = await fetch(buildApiUrl(`/api/v1/admin/monitoring/logs${query ? `?${query}` : ''}`), {
     method: 'GET',
     headers: getAuthHeaders(),
   });
@@ -130,7 +129,7 @@ export async function getSystemLogs(filters: LogFilters = {}): Promise<LogsRespo
  * Get all alert rules
  */
 export async function getAlerts(): Promise<AlertRule[]> {
-  const response = await fetch(`${API_URL}/api/v1/admin/monitoring/alerts`, {
+  const response = await fetch(buildApiUrl('/api/v1/admin/monitoring/alerts'), {
     method: 'GET',
     headers: getAuthHeaders(),
   });
@@ -151,7 +150,7 @@ export async function createAlert(alert: CreateAlertRequest): Promise<{
   message: string;
   alert: AlertRule;
 }> {
-  const response = await fetch(`${API_URL}/api/v1/admin/monitoring/alerts`, {
+  const response = await fetch(buildApiUrl('/api/v1/admin/monitoring/alerts'), {
     method: 'POST',
     headers: getAuthHeaders(),
     body: JSON.stringify(alert),
@@ -173,7 +172,7 @@ export async function updateAlert(alertId: string, alert: Partial<AlertRule>): P
   message: string;
   alert: AlertRule;
 }> {
-  const response = await fetch(`${API_URL}/api/v1/admin/monitoring/alerts/${alertId}`, {
+  const response = await fetch(buildApiUrl(`/api/v1/admin/monitoring/alerts/${alertId}`), {
     method: 'PUT',
     headers: getAuthHeaders(),
     body: JSON.stringify(alert),
@@ -194,7 +193,7 @@ export async function deleteAlert(alertId: string): Promise<{
   success: boolean;
   message: string;
 }> {
-  const response = await fetch(`${API_URL}/api/v1/admin/monitoring/alerts/${alertId}`, {
+  const response = await fetch(buildApiUrl(`/api/v1/admin/monitoring/alerts/${alertId}`), {
     method: 'DELETE',
     headers: getAuthHeaders(),
   });

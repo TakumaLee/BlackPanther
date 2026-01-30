@@ -1,8 +1,9 @@
 // Admin Management API Client
 // 管理員帳戶管理 API 客戶端
 
-import { config, logger } from '@/config/environment';
+import { logger } from '@/config/environment';
 import { authService } from '../auth/auth-service';
+import { buildApiUrl } from './client';
 import {
   Admin,
   AdminListResponse,
@@ -12,8 +13,6 @@ import {
   ResetPasswordResponse,
   AdminFilters
 } from '@/types/admins';
-
-const API_BASE_URL = config.apiUrl;
 
 class AdminsApiClient {
   private async makeRequest<T>(
@@ -26,7 +25,7 @@ class AdminsApiClient {
       throw new Error('管理員未登入');
     }
 
-    const url = `${API_BASE_URL}/api/v1/admin/admins${endpoint}`;
+    const url = buildApiUrl(`/api/v1/admin/admins${endpoint}`);
     const requestConfig: RequestInit = {
       headers: {
         'Content-Type': 'application/json',

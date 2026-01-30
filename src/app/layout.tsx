@@ -15,8 +15,17 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
+// Build page title: append environment label only if not already present in app name
+const envLabel = config.env.toUpperCase();
+const baseTitle = config.app.name;
+const pageTitle = config.isProduction
+  ? baseTitle
+  : baseTitle.includes(`(${envLabel})`)
+    ? baseTitle
+    : `${baseTitle} (${envLabel})`;
+
 export const metadata: Metadata = {
-  title: `${config.app.name}${config.isProduction ? '' : ` (${config.env.toUpperCase()})`}`,
+  title: pageTitle,
   description: "管理儀表板用於審核邀請系統",
 };
 

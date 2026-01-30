@@ -1,6 +1,6 @@
 import { AdminUser, LoginRequest, LoginResponse, TokenData } from '@/types/auth';
+import { buildApiUrl } from '@/lib/api/client';
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
 const TOKEN_KEY = 'auth_token';
 const USER_KEY = 'auth_user';
 
@@ -67,8 +67,8 @@ class AuthService {
    */
   async login(credentials: LoginRequest): Promise<AdminUser> {
     try {
-      // Use Next.js API route instead of direct backend call
-      const response = await fetch('/api/auth/login', {
+      // Use correct admin auth endpoint path
+      const response = await fetch('/api/v1/admin/auth/login', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -109,7 +109,7 @@ class AuthService {
     try {
       // 如果有有效的 token，嘗試呼叫後端登出 API
       if (this.tokenData?.access_token) {
-        await fetch(`${API_BASE_URL}/api/v1/admin/auth/logout`, {
+        await fetch(buildApiUrl('/api/v1/admin/auth/logout'), {
           method: 'POST',
           headers: {
             'Authorization': `${this.tokenData.token_type} ${this.tokenData.access_token}`,
@@ -147,7 +147,7 @@ class AuthService {
     }
 
     try {
-      const response = await fetch(`${API_BASE_URL}/api/v1/admin/auth/me`, {
+      const response = await fetch(buildApiUrl('/api/v1/admin/auth/me'), {
         method: 'GET',
         headers: {
           'Authorization': `${this.tokenData.token_type} ${this.tokenData.access_token}`,

@@ -3,6 +3,7 @@
 
 import { config, logger } from '@/config/environment';
 import { authService } from '../auth/auth-service';
+import { buildApiUrl } from './client';
 import {
   IPMonitoringStats,
   SuspiciousIPsResponse,
@@ -11,8 +12,6 @@ import {
   IPBlockResponse,
   IPFilters,
 } from '@/types/ip-monitoring';
-
-const API_BASE_URL = config.apiUrl;
 
 class IPMonitoringApiClient {
   private async makeRequest<T>(
@@ -25,7 +24,7 @@ class IPMonitoringApiClient {
       throw new Error('Admin not authenticated');
     }
 
-    const url = `${API_BASE_URL}/api/v1/admin/ip-monitoring${endpoint}`;
+    const url = buildApiUrl(`/api/v1/admin/ip-monitoring${endpoint}`);
     const requestConfig: RequestInit = {
       headers: {
         'Content-Type': 'application/json',

@@ -19,7 +19,8 @@ import {
   TrendingUp,
   Cpu,
   Globe,
-  UserCog
+  UserCog,
+  Flag
 } from 'lucide-react'
 
 interface SidebarProps {
@@ -87,6 +88,12 @@ const navigation: NavigationItem[] = [
     name: '內容管理',
     href: '/dashboard/content',
     icon: FileText,
+    current: false,
+  },
+  {
+    name: '檢舉管理',
+    href: '/dashboard/reports',
+    icon: Flag,
     current: false,
   },
   {

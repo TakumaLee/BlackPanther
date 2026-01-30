@@ -10,13 +10,13 @@ import {
   CheckCircle2,
   AlertTriangle,
   Activity,
-  Server,
   RefreshCw,
   PlayCircle,
-  Lock,
+  AlertCircle,
 } from 'lucide-react';
 import { getSchedulerAPI } from '@/lib/api/scheduler-api';
 import type { DashboardData } from '@/types/scheduler';
+import { parseAPIError, getErrorBgColor, formatErrorForLog, type APIError } from '@/lib/utils/api-error';
 
 // Import scheduler components
 import SchedulerStatus from '@/components/scheduler/SchedulerStatus';
@@ -29,10 +29,18 @@ export default function SchedulerPage() {
   const [activeTab, setActiveTab] = useState('overview');
   const [dashboardData, setDashboardData] = useState<DashboardData | null>(null);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<APIError | null>(null);
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
+  const [isMockData, setIsMockData] = useState(false);
 
   const schedulerAPI = getSchedulerAPI();
+
+  // Check if using mock data
+  useEffect(() => {
+    const useMockData = process.env.NEXT_PUBLIC_ENABLE_MOCK_DATA === 'true' &&
+                        process.env.NEXT_PUBLIC_APP_ENV === 'development'
+    setIsMockData(useMockData)
+  }, []);
 
   const loadSchedulerData = async () => {
     setLoading(true);
@@ -43,8 +51,9 @@ export default function SchedulerPage() {
       setDashboardData(data);
       setLastUpdated(new Date());
     } catch (err) {
-      console.error('Failed to load scheduler data:', err);
-      setError(err instanceof Error ? err.message : 'Failed to load scheduler data');
+      const apiError = parseAPIError(err);
+      console.error(formatErrorForLog(apiError));
+      setError(apiError);
     } finally {
       setLoading(false);
     }
@@ -93,18 +102,67 @@ export default function SchedulerPage() {
   }
 
   if (error && !dashboardData) {
+    const errorBgClass = getErrorBgColor(error.type);
+
     return (
       <div className="p-6">
-        <div className="bg-red-50 border border-red-200 rounded-lg p-4">
-          <div className="flex items-center gap-2 text-red-800">
-            <AlertTriangle className="h-5 w-5" />
-            <span className="font-medium">載入失敗</span>
+        <div className={`border rounded-lg p-6 ${errorBgClass}`}>
+          <div className="flex items-start gap-3">
+            <AlertCircle className="h-6 w-6 flex-shrink-0 mt-0.5" />
+            <div className="flex-1">
+              <h3 className="font-semibold text-lg mb-2">無法載入調度器資料</h3>
+              <p className="font-medium mb-1">{error.userMessage}</p>
+
+              {/* Technical details for developers */}
+              {process.env.NEXT_PUBLIC_APP_ENV === 'development' && (
+                <details className="mt-3">
+                  <summary className="cursor-pointer text-sm opacity-80 hover:opacity-100">
+                    技術細節
+                  </summary>
+                  <div className="mt-2 p-3 bg-white bg-opacity-50 rounded text-sm font-mono">
+                    <div><strong>錯誤類型：</strong>{error.type}</div>
+                    <div className="mt-1"><strong>訊息：</strong>{error.message}</div>
+                    {error.statusCode && (
+                      <div className="mt-1"><strong>狀態碼：</strong>{error.statusCode}</div>
+                    )}
+                  </div>
+                </details>
+              )}
+
+              {/* Action buttons */}
+              <div className="flex gap-3 mt-4">
+                {error.canRetry && (
+                  <Button
+                    onClick={handleRefresh}
+                    variant="outline"
+                    className="bg-white hover:bg-gray-50"
+                  >
+                    <RefreshCw className="h-4 w-4 mr-2" />
+                    重試
+                  </Button>
+                )}
+
+                {error.type === 'unauthorized' && (
+                  <Button
+                    onClick={() => window.location.href = '/login'}
+                    className="bg-white hover:bg-gray-50"
+                  >
+                    重新登入
+                  </Button>
+                )}
+
+                {(error.type === 'cors' || error.type === 'not_found') && (
+                  <Button
+                    onClick={() => window.open('https://github.com/your-repo/issues', '_blank')}
+                    variant="outline"
+                    className="bg-white hover:bg-gray-50"
+                  >
+                    回報問題
+                  </Button>
+                )}
+              </div>
+            </div>
           </div>
-          <p className="text-red-700 mt-2">{error}</p>
-          <Button onClick={handleRefresh} className="mt-4" variant="outline">
-            <RefreshCw className="h-4 w-4 mr-2" />
-            重試
-          </Button>
         </div>
       </div>
     );
@@ -115,6 +173,22 @@ export default function SchedulerPage() {
 
   return (
     <div className="space-y-6">
+      {/* Mock Data Warning Banner */}
+      {isMockData && (
+        <div className="bg-yellow-100 border-l-4 border-yellow-500 text-yellow-700 p-4 rounded">
+          <div className="flex items-start gap-3">
+            <AlertTriangle className="h-5 w-5 flex-shrink-0 mt-0.5" />
+            <div>
+              <p className="font-bold">⚠️ 警告：使用模擬資料</p>
+              <p className="text-sm mt-1">API 不可用，正在顯示開發用的範例資料。</p>
+              <p className="text-xs mt-1 opacity-80">
+                環境變數：NEXT_PUBLIC_ENABLE_MOCK_DATA=true
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Page Header */}
       <div className="flex justify-between items-center">
         <div>

@@ -361,3 +361,138 @@ export interface UserTransactionsResponse {
   page: number;
   has_next: boolean;
 }
+
+// ============================================
+// Moderation / Content Reports Types
+// ============================================
+
+export type ReportType =
+  | 'harassment'
+  | 'spam'
+  | 'violence'
+  | 'hate_speech'
+  | 'sexual_content'
+  | 'self_harm'
+  | 'illegal_activity'
+  | 'privacy_violation'
+  | 'other';
+
+export type ReportStatus = 'pending' | 'under_review' | 'resolved' | 'dismissed';
+
+export type ModerationAction = 'approve' | 'remove' | 'escalate' | 'dismiss';
+
+export interface ContentReport {
+  id: string;
+  article_id?: string;
+  reporter_id?: string;
+  report_type: ReportType;
+  description?: string;
+  status: ReportStatus;
+  priority: number;
+  assigned_to?: string;
+  escalated_at?: string;
+  created_at: string;
+  updated_at: string;
+  resolved_at?: string;
+  resolved_by?: string;
+  resolution_notes?: string;
+  // Extended fields for display
+  reporter_email?: string;
+  reporter_username?: string;
+  article_title?: string;
+  article_content?: string;
+  assigned_to_username?: string;
+}
+
+export interface ModerationQueueItem {
+  id: string;
+  report: ContentReport;
+  priority_score: number;
+  escalation_level: number;
+  sla_deadline?: string;
+  time_pending_hours: number;
+}
+
+export interface ModerationQueueFilters {
+  priority_min?: number;
+  status?: ReportStatus | 'all';
+  assigned_to_me?: boolean;
+  report_type?: ReportType | 'all';
+  page?: number;
+  limit?: number;
+}
+
+export interface ModerationQueueResponse {
+  items: ModerationQueueItem[];
+  total: number;
+  page: number;
+  limit: number;
+  has_next: boolean;
+}
+
+export interface ModerationAssignment {
+  report_id: string;
+  moderator_id: string;
+}
+
+export interface ModerationResolution {
+  report_id: string;
+  action: ModerationAction;
+  notes?: string;
+}
+
+export interface ModerationEscalation {
+  report_id: string;
+  reason: string;
+  notify_admin?: boolean;
+}
+
+export interface ModeratorPerformance {
+  moderator_id: string;
+  moderator_username?: string;
+  cases_resolved: number;
+  average_time_minutes: number;
+  sla_compliance_rate: number;
+}
+
+export interface ModerationStats {
+  pending_count: number;
+  under_review_count?: number;
+  resolved_count?: number;
+  dismissed_count?: number;
+  average_resolution_time_hours: number;
+  sla_compliance_rate: number;
+  escalation_count_24h: number;
+  moderator_performance: ModeratorPerformance[];
+  // Additional stats
+  reports_today?: number;
+  reports_this_week?: number;
+  by_type?: Record<ReportType, number>;
+}
+
+// Report type labels for display
+export const REPORT_TYPE_LABELS: Record<ReportType, string> = {
+  harassment: '騷擾',
+  spam: '垃圾訊息',
+  violence: '暴力內容',
+  hate_speech: '仇恨言論',
+  sexual_content: '色情內容',
+  self_harm: '自我傷害',
+  illegal_activity: '非法活動',
+  privacy_violation: '隱私侵犯',
+  other: '其他'
+};
+
+export const REPORT_STATUS_LABELS: Record<ReportStatus, string> = {
+  pending: '待處理',
+  under_review: '審核中',
+  resolved: '已解決',
+  dismissed: '已駁回'
+};
+
+export const MODERATION_ACTION_LABELS: Record<ModerationAction, string> = {
+  approve: '批准（無違規）',
+  remove: '移除內容',
+  escalate: '升級處理',
+  dismiss: '駁回檢舉'
+};

@@ -4,8 +4,7 @@
  */
 
 import { getAuthHeaders } from './auth';
-
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+import { buildApiUrl } from './client';
 
 // Type definitions matching backend schemas
 export interface AIModel {
@@ -73,7 +72,7 @@ export interface TestModelResponse {
  * Get AI configuration
  */
 export async function getAIConfig(): Promise<AIConfig> {
-  const response = await fetch(`${API_URL}/api/v1/admin/ai-config`, {
+  const response = await fetch(buildApiUrl('/api/v1/admin/ai-config'), {
     method: 'GET',
     headers: getAuthHeaders(),
   });
@@ -94,7 +93,7 @@ export async function updateAIConfig(config: Partial<AIConfig>): Promise<{
   message: string;
   config: AIConfig;
 }> {
-  const response = await fetch(`${API_URL}/api/v1/admin/ai-config`, {
+  const response = await fetch(buildApiUrl('/api/v1/admin/ai-config'), {
     method: 'PUT',
     headers: getAuthHeaders(),
     body: JSON.stringify(config),
@@ -112,7 +111,7 @@ export async function updateAIConfig(config: Partial<AIConfig>): Promise<{
  * Test an AI model with sample text
  */
 export async function testAIModel(modelId: string, text: string): Promise<TestModelResponse> {
-  const response = await fetch(`${API_URL}/api/v1/admin/ai-config/test`, {
+  const response = await fetch(buildApiUrl('/api/v1/admin/ai-config/test'), {
     method: 'POST',
     headers: getAuthHeaders(),
     body: JSON.stringify({ model_id: modelId, text }),
@@ -134,7 +133,7 @@ export async function resetAIConfig(): Promise<{
   message: string;
   config: AIConfig;
 }> {
-  const response = await fetch(`${API_URL}/api/v1/admin/ai-config/reset`, {
+  const response = await fetch(buildApiUrl('/api/v1/admin/ai-config/reset'), {
     method: 'POST',
     headers: getAuthHeaders(),
   });

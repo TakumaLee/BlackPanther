@@ -4,8 +4,7 @@
  */
 
 import { getAuthHeaders } from './auth';
-
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+import { buildApiUrl } from './client';
 
 // Type definitions matching the page's existing interfaces
 export interface InviteCode {
@@ -72,7 +71,7 @@ export async function getInviteCodes(
   if (status) params.append('status', status);
 
   const queryString = params.toString();
-  const url = `${API_URL}/api/v1/admin/invites/codes${queryString ? `?${queryString}` : ''}`;
+  const url = `${buildApiUrl('/api/v1/admin/invites/codes')}${queryString ? `?${queryString}` : ''}`;
 
   const response = await fetch(url, {
     method: 'GET',
@@ -92,7 +91,7 @@ export async function getInviteCodes(
  * Get invite statistics
  */
 export async function getInviteStats(): Promise<InviteStats> {
-  const response = await fetch(`${API_URL}/api/v1/admin/invites/stats`, {
+  const response = await fetch(buildApiUrl('/api/v1/admin/invites/stats'), {
     method: 'GET',
     headers: getAuthHeaders(),
   });
@@ -113,7 +112,7 @@ export async function getInviteActivities(
   limit: number = 20
 ): Promise<{ activities: InviteActivity[]; total: number; page: number; limit: number }> {
   const response = await fetch(
-    `${API_URL}/api/v1/admin/invites/activities?page=${page}&limit=${limit}`,
+    `${buildApiUrl('/api/v1/admin/invites/activities')}?page=${page}&limit=${limit}`,
     {
       method: 'GET',
       headers: getAuthHeaders(),
@@ -134,7 +133,7 @@ export async function getInviteActivities(
 export async function createInviteCode(
   data: CreateInviteCodeRequest
 ): Promise<{ message: string; code: InviteCode }> {
-  const response = await fetch(`${API_URL}/api/v1/admin/invites/codes`, {
+  const response = await fetch(buildApiUrl('/api/v1/admin/invites/codes'), {
     method: 'POST',
     headers: getAuthHeaders(),
     body: JSON.stringify(data),
@@ -155,7 +154,7 @@ export async function updateInviteCode(
   id: string,
   data: UpdateInviteCodeRequest
 ): Promise<{ message: string; code: InviteCode }> {
-  const response = await fetch(`${API_URL}/api/v1/admin/invites/codes/${id}`, {
+  const response = await fetch(buildApiUrl(`/api/v1/admin/invites/codes/${id}`), {
     method: 'PUT',
     headers: getAuthHeaders(),
     body: JSON.stringify(data),
@@ -173,7 +172,7 @@ export async function updateInviteCode(
  * Delete an invite code
  */
 export async function deleteInviteCode(id: string): Promise<{ message: string }> {
-  const response = await fetch(`${API_URL}/api/v1/admin/invites/codes/${id}`, {
+  const response = await fetch(buildApiUrl(`/api/v1/admin/invites/codes/${id}`), {
     method: 'DELETE',
     headers: getAuthHeaders(),
   });

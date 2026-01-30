@@ -1,19 +1,18 @@
 import { ApiResponse, InviteReview, DashboardStats, PaginatedResponse, PaginationParams, ReviewFilters } from '@/types'
 import { authService } from '@/lib/auth/auth-service'
-
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
+import { buildApiUrl } from './client'
 
 class ReviewsAPI {
   private async request<T>(endpoint: string, options?: RequestInit): Promise<T> {
     // 獲取認證 header
     const authHeader = authService.getAuthHeader()
-    
+
     // 如果沒有認證 token，拋出錯誤
     if (!authHeader) {
       throw new Error('未認證，請重新登入')
     }
 
-    const response = await fetch(`${API_BASE_URL}${endpoint}`, {
+    const response = await fetch(buildApiUrl(endpoint), {
       headers: {
         'Content-Type': 'application/json',
         'Authorization': authHeader,

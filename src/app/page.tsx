@@ -19,9 +19,10 @@ import {
   LogOut,
   User
 } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { useAuth } from '@/lib/auth/auth-context';
 import { useRouter } from 'next/navigation';
+import { adminApi } from '@/lib/api/admin';
 
 // 數字動畫 hook
 function useAnimatedValue(end: number, duration: number = 1000) {
@@ -43,15 +44,58 @@ function useAnimatedValue(end: number, duration: number = 1000) {
   return value;
 }
 
+// 首頁統計數據介面
+interface HomeStats {
+  activeUsers: number;
+  todayArticles: number;
+  totalCoinsSpent: number;
+  userGrowth: number;
+  articleGrowth: number;
+}
+
 export default function HomePage() {
   const { user, logout, loading } = useAuth();
   const router = useRouter();
+  const [stats, setStats] = useState<HomeStats | null>(null);
+  const [statsLoading, setStatsLoading] = useState(false);
+  const [statsError, setStatsError] = useState<string | null>(null);
 
-  // 模擬數據 - 實際應從 API 獲取
-  const todayActiveUsers = useAnimatedValue(128, 800);
-  const todayArticles = useAnimatedValue(42, 900);
-  const todayTransactions = useAnimatedValue(1234, 1000);
-  const systemUptime = 99.9;
+  // 載入真實統計數據
+  const loadStats = useCallback(async () => {
+    if (!user) return;
+
+    setStatsLoading(true);
+    setStatsError(null);
+
+    try {
+      const dashboardStats = await adminApi.getDashboardStats();
+      setStats({
+        activeUsers: dashboardStats.total_users - dashboardStats.blocked_users,
+        todayArticles: dashboardStats.article_growth_7d,
+        totalCoinsSpent: dashboardStats.total_coins_spent,
+        userGrowth: dashboardStats.user_growth_7d > 0
+          ? ((dashboardStats.user_growth_7d / Math.max(dashboardStats.total_users - dashboardStats.user_growth_7d, 1)) * 100)
+          : 0,
+        articleGrowth: dashboardStats.article_growth_7d > 0
+          ? ((dashboardStats.article_growth_7d / Math.max(dashboardStats.total_articles - dashboardStats.article_growth_7d, 1)) * 100)
+          : 0
+      });
+    } catch (err) {
+      console.error('Failed to load home stats:', err);
+      setStatsError(err instanceof Error ? err.message : '載入統計數據失敗');
+    } finally {
+      setStatsLoading(false);
+    }
+  }, [user]);
+
+  useEffect(() => {
+    loadStats();
+  }, [loadStats]);
+
+  // 使用動畫值顯示真實數據
+  const animatedActiveUsers = useAnimatedValue(stats?.activeUsers || 0, 800);
+  const animatedTodayArticles = useAnimatedValue(stats?.todayArticles || 0, 900);
+  const animatedCoinsSpent = useAnimatedValue(stats?.totalCoinsSpent || 0, 1000);
 
   const handleLogin = () => {
     router.push('/login');
@@ -227,19 +271,39 @@ export default function HomePage() {
 
         {/* 關鍵指標卡片區 - 僅顯示給已登入用戶 */}
         {user && (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+          <>
+            {statsError && (
+              <div className="bg-red-50 border-l-4 border-red-400 p-4 mb-6">
+                <div className="flex">
+                  <div className="ml-3">
+                    <p className="text-sm text-red-700">
+                      <span className="font-medium">載入失敗：</span> {statsError}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
             <Card className="border-[var(--border)] bg-[var(--surface)] hover:shadow-lg transition-all duration-300 animate-fade-in" style={{ animationDelay: '0.1s' }}>
               <CardContent className="p-6">
                 <div className="flex items-center justify-between mb-2">
-                  <p className="text-sm text-[var(--text-secondary)]">今日活躍用戶</p>
+                  <p className="text-sm text-[var(--text-secondary)]">活躍用戶</p>
                   <Users className="h-4 w-4 text-blue-600" />
                 </div>
                 <div className="flex items-baseline gap-2">
-                  <p className="text-2xl font-bold text-[var(--foreground)]">{todayActiveUsers.toLocaleString()}</p>
-                  <span className="flex items-center text-sm text-green-600">
-                    <ArrowUpRight className="h-3 w-3" />
-                    12.5%
-                  </span>
+                  {statsLoading ? (
+                    <div className="animate-pulse bg-gray-200 h-8 w-20 rounded"></div>
+                  ) : (
+                    <>
+                      <p className="text-2xl font-bold text-[var(--foreground)]">{animatedActiveUsers.toLocaleString()}</p>
+                      {stats && stats.userGrowth !== 0 && (
+                        <span className={`flex items-center text-sm ${stats.userGrowth >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                          <ArrowUpRight className="h-3 w-3" />
+                          {stats.userGrowth.toFixed(1)}%
+                        </span>
+                      )}
+                    </>
+                  )}
                 </div>
               </CardContent>
             </Card>
@@ -247,15 +311,23 @@ export default function HomePage() {
             <Card className="border-[var(--border)] bg-[var(--surface)] hover:shadow-lg transition-all duration-300 animate-fade-in" style={{ animationDelay: '0.2s' }}>
               <CardContent className="p-6">
                 <div className="flex items-center justify-between mb-2">
-                  <p className="text-sm text-[var(--text-secondary)]">今日新增文章</p>
+                  <p className="text-sm text-[var(--text-secondary)]">7日新增文章</p>
                   <FileText className="h-4 w-4 text-green-600" />
                 </div>
                 <div className="flex items-baseline gap-2">
-                  <p className="text-2xl font-bold text-[var(--foreground)]">{todayArticles.toLocaleString()}</p>
-                  <span className="flex items-center text-sm text-green-600">
-                    <ArrowUpRight className="h-3 w-3" />
-                    8.3%
-                  </span>
+                  {statsLoading ? (
+                    <div className="animate-pulse bg-gray-200 h-8 w-20 rounded"></div>
+                  ) : (
+                    <>
+                      <p className="text-2xl font-bold text-[var(--foreground)]">{animatedTodayArticles.toLocaleString()}</p>
+                      {stats && stats.articleGrowth !== 0 && (
+                        <span className={`flex items-center text-sm ${stats.articleGrowth >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                          <ArrowUpRight className="h-3 w-3" />
+                          {stats.articleGrowth.toFixed(1)}%
+                        </span>
+                      )}
+                    </>
+                  )}
                 </div>
               </CardContent>
             </Card>
@@ -263,15 +335,15 @@ export default function HomePage() {
             <Card className="border-[var(--border)] bg-[var(--surface)] hover:shadow-lg transition-all duration-300 animate-fade-in" style={{ animationDelay: '0.3s' }}>
               <CardContent className="p-6">
                 <div className="flex items-center justify-between mb-2">
-                  <p className="text-sm text-[var(--text-secondary)]">今日金幣交易</p>
+                  <p className="text-sm text-[var(--text-secondary)]">總金幣消費</p>
                   <DollarSign className="h-4 w-4 text-yellow-600" />
                 </div>
                 <div className="flex items-baseline gap-2">
-                  <p className="text-2xl font-bold text-[var(--foreground)]">{todayTransactions.toLocaleString()}</p>
-                  <span className="flex items-center text-sm text-green-600">
-                    <ArrowUpRight className="h-3 w-3" />
-                    15.2%
-                  </span>
+                  {statsLoading ? (
+                    <div className="animate-pulse bg-gray-200 h-8 w-20 rounded"></div>
+                  ) : (
+                    <p className="text-2xl font-bold text-[var(--foreground)]">{animatedCoinsSpent.toLocaleString()}</p>
+                  )}
                 </div>
               </CardContent>
             </Card>
@@ -285,12 +357,13 @@ export default function HomePage() {
                 <div className="flex items-baseline gap-2">
                   <p className="text-2xl font-bold text-green-600">正常</p>
                   <span className="text-sm text-[var(--text-secondary)]">
-                    {systemUptime}% 在線率
+                    運行中
                   </span>
                 </div>
               </CardContent>
             </Card>
           </div>
+          </>
         )}
 
         {/* 功能模組區 */}

@@ -49,7 +49,11 @@ export default function EconomyPage() {
 
   useEffect(() => {
     if (currentUser) {
-      loadConfig();
+      // Add small delay to ensure auth headers are ready
+      const timer = setTimeout(() => {
+        loadConfig();
+      }, 100);
+      return () => clearTimeout(timer);
     }
   }, [currentUser]);
 

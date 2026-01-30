@@ -12,17 +12,14 @@ import {
   Mail,
   DollarSign,
   FileText,
-  Shield,
   Network,
   UserCog,
   BarChart3,
-  AlertTriangle,
   Eye,
-  MessageSquare,
   Ban,
   Cpu,
-  Cog,
   Brain,
+  Flag,
 } from 'lucide-react';
 import classNames from 'classnames';
 
@@ -52,6 +49,7 @@ export default function Sidebar() {
       title: 'Review & Moderation',
       items: [
         { name: 'Invite Reviews', href: '/dashboard/reviews', icon: <Eye className="w-5 h-5" /> },
+        { name: 'Reports', href: '/dashboard/reports', icon: <Flag className="w-5 h-5" /> },
         { name: 'Content', href: '/dashboard/content', icon: <FileText className="w-5 h-5" /> },
         { name: 'Invites', href: '/dashboard/invites', icon: <Mail className="w-5 h-5" /> },
       ]

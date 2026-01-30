@@ -39,3 +39,19 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# temp test/debug files
+*.log
+test-*.json
+test-*.js
+test_*.js
+comprehensive-test.js
+api-test-*.json
+audit-*.json
+audit-*.log
+test-screenshots/
+tests/
+playwright.config.ts
+.mcp.json
+*.md
+!README.md

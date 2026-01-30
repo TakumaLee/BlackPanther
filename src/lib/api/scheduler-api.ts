@@ -12,6 +12,7 @@ import {
   Alert,
 } from '@/types/scheduler'
 import { getMockDashboardData } from './scheduler-mock-data'
+import { getApiBaseUrl } from './client'
 
 interface SchedulerAPIConfig {
   baseUrl: string
@@ -80,22 +81,18 @@ class SchedulerAPI {
   // ============================================================================
 
   async getDashboard(): Promise<DashboardData> {
-    // Return mock data in development mode
+    // Return mock data ONLY in development mode when explicitly enabled
     if (this.useMockData) {
+      console.warn('⚠️ Using mock data (NEXT_PUBLIC_ENABLE_MOCK_DATA=true)')
       return Promise.resolve(getMockDashboardData())
     }
 
-    try {
-      const response = await this.request<DashboardData>('/api/v1/admin/scheduler/dashboard')
-      if (!response.success || !response.data) {
-        throw new Error(response.error || 'Failed to fetch dashboard data')
-      }
-      return response.data
-    } catch (error) {
-      console.warn('⚠️ Scheduler API not available on QA, using mock data. Deploy backend changes to enable real data.', error)
-      // Fallback to mock data if API is not available
-      return getMockDashboardData()
+    // No fallback - throw errors properly for QA/Production
+    const response = await this.request<DashboardData>('/api/v1/admin/scheduler/dashboard')
+    if (!response.success || !response.data) {
+      throw new Error(response.error || 'Failed to fetch dashboard data')
     }
+    return response.data
   }
 
   async getSystemMetrics(): Promise<SystemMetrics> {
@@ -569,11 +566,16 @@ export const createSchedulerAPI = (config: SchedulerAPIConfig): SchedulerAPI => 
 
 export const getSchedulerAPI = (): SchedulerAPI => {
   if (!defaultSchedulerAPI) {
-    // Use QA environment with real backend API
-    const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'https://black-alligator-qa-646040465533.asia-east1.run.app'
+    // Use environment-specific API URL from centralized config
+    const baseUrl = getApiBaseUrl()
+
+    // Only use mock data in development when explicitly enabled
+    const useMockData = process.env.NEXT_PUBLIC_ENABLE_MOCK_DATA === 'true' &&
+                        process.env.NEXT_PUBLIC_APP_ENV === 'development'
+
     defaultSchedulerAPI = new SchedulerAPI({
       baseUrl,
-      useMockData: false // Use real API - backend now has scheduler/dashboard endpoint
+      useMockData
     })
   }
   return defaultSchedulerAPI

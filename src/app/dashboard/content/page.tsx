@@ -7,8 +7,6 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-// import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-// import { Alert, AlertDescription } from '@/components/ui/alert';
 import {
   FileText,
   Search,
@@ -21,7 +19,6 @@ import {
   BarChart3,
   MessageSquare,
   Heart,
-  // Share2,
   ChevronLeft,
   ChevronRight
 } from 'lucide-react';
@@ -125,24 +122,8 @@ export default function ContentPage() {
     } catch (err) {
       console.error('Failed to fetch articles:', err);
       setError(err instanceof Error ? err.message : '載入文章失敗');
-
-      // 如果 API 失敗，顯示一些示例數據以便測試 UI
-      setArticles([
-        {
-          id: 'sample-1',
-          title: '示例文章 - API 連接中',
-          content: '這是一個示例文章，用於展示介面功能。實際數據正在載入中...',
-          author_id: 'sample-user',
-          author_name: '示例用戶',
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString(),
-          status: 'active',
-          reactions_count: 0,
-          comments_count: 0,
-          reports_count: 0
-        }
-      ]);
-      setTotal(1);
+      setArticles([]);
+      setTotal(0);
     } finally {
       setLoading(false);
     }
@@ -334,7 +315,13 @@ export default function ContentPage() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-[var(--text-secondary)]">今日新增</p>
-                <p className="text-2xl font-bold text-green-600">12</p>
+                <p className="text-2xl font-bold text-green-600">
+                  {articles.filter(a => {
+                    const today = new Date();
+                    const articleDate = new Date(a.created_at);
+                    return articleDate.toDateString() === today.toDateString();
+                  }).length}
+                </p>
               </div>
               <Clock className="h-8 w-8 text-green-600" />
             </div>
